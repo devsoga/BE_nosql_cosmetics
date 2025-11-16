@@ -1,0 +1,148 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0 d-flex align-items-center">
+            <div class="bg-info text-white rounded-3 p-2 me-3"
+                style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            Quản lý đơn hàng
+        </h2>
+        <p class="text-muted mb-0 mt-1">Quản lý toàn bộ đơn hàng của khách hàng</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary">
+            <i class="fas fa-download me-1"></i>
+            Xuất Excel
+        </button>
+    </div>
+</div>
+
+<!-- Orders Filters -->
+<div class="card card-custom mb-4">
+    <div class="card-body">
+        <form method="GET" action="/admin/orders" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">
+                    <i class="fas fa-search me-2 text-muted"></i>
+                    Tìm kiếm
+                </label>
+                <input type="text" class="form-control" name="search" placeholder="Mã đơn hàng, tên khách hàng...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-filter me-2 text-muted"></i>
+                    Trạng thái
+                </label>
+                <select class="form-select" name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="pending">Chờ xử lý</option>
+                    <option value="confirmed">Đã xác nhận</option>
+                    <option value="shipped">Đang giao</option>
+                    <option value="delivered">Đã giao</option>
+                    <option value="cancelled">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-calendar me-2 text-muted"></i>
+                    Ngày tạo
+                </label>
+                <input type="date" class="form-control" name="date">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="/admin/orders" class="btn btn-outline-secondary">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="card card-custom">
+    <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">Danh sách đơn hàng</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (orders && orders.length> 0) { %>
+                        <% orders.forEach(order=> { %>
+                            <tr>
+                                <td>
+                                    <span class="fw-bold text-primary">#<%= order._id.toString().slice(-6) %></span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-medium">
+                                            <%= order.user?.name || 'Khách hàng' %>
+                                        </div>
+                                        <small class="text-muted">
+                                            <%= order.user?.email || '' %>
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success">
+                                        <%= new Intl.NumberFormat('vi-VN', { style: 'currency' , currency: 'VND'
+                                            }).format(order.total) %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% let statusConfig={ pending: { class: 'warning' , text: 'Chờ xử lý' }, confirmed:
+                                        { class: 'info' , text: 'Đã xác nhận' }, shipped: { class: 'primary' ,
+                                        text: 'Đang giao' }, delivered: { class: 'success' , text: 'Đã giao' },
+                                        cancelled: { class: 'danger' , text: 'Đã hủy' } }; let
+                                        config=statusConfig[order.status] || { class: 'secondary' , text: order.status
+                                        }; %>
+                                        <span class="badge bg-<%= config.class %>">
+                                            <%= config.text %>
+                                        </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        <%= new Date(order.createdAt).toLocaleDateString('vi-VN') %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }) %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="mb-3">
+                                                <i class="fas fa-shopping-cart fa-3x text-muted opacity-50"></i>
+                                            </div>
+                                            <h5 class="text-muted">Chưa có đơn hàng nào</h5>
+                                            <p class="text-muted">Các đơn hàng sẽ hiển thị ở đây</p>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

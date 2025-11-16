@@ -1,0 +1,169 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0 d-flex align-items-center">
+            <div class="bg-success text-white rounded-3 p-2 me-3"
+                style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-users"></i>
+            </div>
+            Quản lý khách hàng
+        </h2>
+        <p class="text-muted mb-0 mt-1">Quản lý thông tin khách hàng và tài khoản</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary">
+            <i class="fas fa-download me-1"></i>
+            Xuất Excel
+        </button>
+        <button class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>
+            Thêm khách hàng
+        </button>
+    </div>
+</div>
+
+<!-- Users Filters -->
+<div class="card card-custom mb-4">
+    <div class="card-body">
+        <form method="GET" action="/admin/users" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">
+                    <i class="fas fa-search me-2 text-muted"></i>
+                    Tìm kiếm
+                </label>
+                <input type="text" class="form-control" name="search" placeholder="Tên, email khách hàng...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-filter me-2 text-muted"></i>
+                    Trạng thái
+                </label>
+                <select class="form-select" name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Không hoạt động</option>
+                    <option value="blocked">Bị chặn</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="fas fa-calendar me-2 text-muted"></i>
+                    Ngày đăng ký
+                </label>
+                <input type="date" class="form-control" name="date">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="/admin/users" class="btn btn-outline-secondary">
+                    <i class="fas fa-refresh"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card card-custom">
+    <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">Danh sách khách hàng</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Khách hàng</th>
+                        <th>Email</th>
+                        <th>SĐT</th>
+                        <th>Tổng đơn hàng</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày đăng ký</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (users && users.length> 0) { %>
+                        <% users.forEach(user=> { %>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-3">
+                                            <% if (user.avatar) { %>
+                                                <img src="<%= user.avatar %>" alt="<%= user.name %>"
+                                                    class="rounded-circle" width="40" height="40">
+                                                <% } else { %>
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                        style="width: 40px; height: 40px;">
+                                                        <%= user.name?.charAt(0).toUpperCase() || 'U' %>
+                                                    </div>
+                                                    <% } %>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">
+                                                <%= user.name || 'Khách hàng' %>
+                                            </div>
+                                            <small class="text-muted">ID: <%= user._id.toString().slice(-8) %></small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        <%= user.email || 'Chưa cập nhật' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        <%= user.phone || 'Chưa cập nhật' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-info">
+                                        <%= user.totalOrders || 0 %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% let statusConfig={ active: { class: 'success' , text: 'Hoạt động' }, inactive: {
+                                        class: 'secondary' , text: 'Không hoạt động' }, blocked: { class: 'danger' ,
+                                        text: 'Bị chặn' } }; let config=statusConfig[user.status] || { class: 'success'
+                                        , text: 'Hoạt động' }; %>
+                                        <span class="badge bg-<%= config.class %>">
+                                            <%= config.text %>
+                                        </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        <%= new Date(user.createdAt).toLocaleDateString('vi-VN') %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" title="Chặn">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }) %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5">
+                                            <div class="mb-3">
+                                                <i class="fas fa-users fa-3x text-muted opacity-50"></i>
+                                            </div>
+                                            <h5 class="text-muted">Chưa có khách hàng nào</h5>
+                                            <p class="text-muted">Khách hàng sẽ hiển thị ở đây</p>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,399 @@
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0">
+            <i class="fas fa-<%= product ? 'edit' : 'plus' %> me-2"></i>
+            <%= product ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới' %>
+        </h2>
+        <% if (product) { %>
+            <small class="text-muted">ID: <%= product._id %></small>
+            <% } %>
+    </div>
+    <a href="/admin/products" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Quay lại
+    </a>
+</div>
+
+<form method="POST" action="<%= product ? `/admin/products/edit/${product._id}` : '/admin/products/add' %>"
+    enctype="multipart/form-data">
+
+    <div class="row">
+        <!-- Left Column - Product Info -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Thông tin cơ bản
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name"
+                                value="<%= product ? product.name : '' %>" placeholder="Nhập tên sản phẩm..." required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Danh mục <span class="text-danger">*</span></label>
+                            <select class="form-select" name="category" required>
+                                <option value="">Chọn danh mục</option>
+                                <% const categories=[ 'Chăm sóc da' , 'Trang điểm' , 'Nước hoa' , 'Chăm sóc tóc'
+                                    , 'Chăm sóc cơ thể' , 'Dụng cụ làm đẹp' , 'Sản phẩm nam' , 'Sản phẩm trẻ em' ]; %>
+                                    <% categories.forEach(category=> { %>
+                                        <option value="<%= category %>" <%=product && product.category===category
+                                            ? 'selected' : '' %>>
+                                            <%= category %>
+                                        </option>
+                                        <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Thương hiệu <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="brand"
+                                value="<%= product ? product.brand : '' %>" placeholder="Nhập thương hiệu..." required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Mô tả sản phẩm</label>
+                            <textarea class="form-control" name="description" rows="4"
+                                placeholder="Mô tả chi tiết về sản phẩm..."><%= product ? product.description : '' %></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing & Inventory -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign me-2"></i>
+                        Giá bán & Kho hàng
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giá bán <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="price"
+                                    value="<%= product ? product.price : '' %>" placeholder="0" min="0" step="1000"
+                                    required>
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giá gốc</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="original_price"
+                                    value="<%= product ? product.original_price || '' : '' %>" placeholder="0" min="0"
+                                    step="1000">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số lượng tồn kho <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="stock"
+                                value="<%= product ? product.stock : '' %>" placeholder="0" min="0" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">SKU</label>
+                            <input type="text" class="form-control" name="sku"
+                                value="<%= product ? product.sku || '' : '' %>" placeholder="Mã sản phẩm (tùy chọn)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Attributes -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tags me-2"></i>
+                        Thuộc tính sản phẩm
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Màu sắc</label>
+                            <input type="text" class="form-control" name="color"
+                                value="<%= product ? product.color || '' : '' %>" placeholder="VD: Đỏ, Xanh, Hồng...">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kích thước/Dung tích</label>
+                            <input type="text" class="form-control" name="size"
+                                value="<%= product ? product.size || '' : '' %>" placeholder="VD: 50ml, 100g, Large...">
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Thành phần</label>
+                            <textarea class="form-control" name="ingredients" rows="3"
+                                placeholder="Liệt kê các thành phần chính..."><%= product ? product.ingredients || '' : '' %></textarea>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Hướng dẫn sử dụng</label>
+                            <textarea class="form-control" name="usage_instructions" rows="3"
+                                placeholder="Cách sử dụng sản phẩm..."><%= product ? product.usage_instructions || '' : '' %></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Images & Settings -->
+        <div class="col-lg-4">
+            <!-- Product Images -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-images me-2"></i>
+                        Hình ảnh sản phẩm
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tải lên hình ảnh</label>
+                        <input type="file" class="form-control" name="images" multiple accept="image/*"
+                            onchange="previewImages(this)">
+                        <small class="text-muted">
+                            Chọn nhiều hình ảnh (tối đa 5 ảnh). Ảnh đầu tiên sẽ là ảnh chính.
+                        </small>
+                    </div>
+
+                    <!-- Current Images -->
+                    <% if (product && product.images && product.images.length> 0) { %>
+                        <div class="mb-3">
+                            <label class="form-label">Hình ảnh hiện tại</label>
+                            <div class="row g-2">
+                                <% product.images.forEach((image, index)=> { %>
+                                    <div class="col-6">
+                                        <div class="position-relative">
+                                            <img src="<%= image %>" alt="Product image <%= index + 1 %>"
+                                                class="img-fluid rounded border">
+                                            <button type="button"
+                                                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                                                onclick="removeCurrentImage('<%= image %>')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <% if (index===0) { %>
+                                                <span class="badge bg-primary position-absolute bottom-0 start-0 m-1">
+                                                    Ảnh chính
+                                                </span>
+                                                <% } %>
+                                        </div>
+                                    </div>
+                                    <% }) %>
+                            </div>
+                        </div>
+                        <% } %>
+
+                            <!-- Image Preview -->
+                            <div id="imagePreview" class="row g-2"></div>
+                </div>
+            </div>
+
+            <!-- Product Settings -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Cài đặt
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" name="status">
+                            <option value="active" <%=product && product.status==='active' ? 'selected' : '' %>>
+                                Đang bán
+                            </option>
+                            <option value="inactive" <%=product && product.status==='inactive' ? 'selected' : '' %>>
+                                Tạm dừng
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="featured" id="featured" <%=product &&
+                                product.featured ? 'checked' : '' %>>
+                            <label class="form-check-label" for="featured">
+                                Sản phẩm nổi bật
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="new_arrival" id="new_arrival"
+                                <%=product && product.new_arrival ? 'checked' : '' %>>
+                            <label class="form-check-label" for="new_arrival">
+                                Sản phẩm mới
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Settings -->
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        SEO
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Từ khóa tìm kiếm</label>
+                        <input type="text" class="form-control" name="keywords"
+                            value="<%= product ? product.keywords || '' : '' %>"
+                            placeholder="Từ khóa cách nhau bởi dấu phẩy">
+                        <small class="text-muted">VD: son môi, màu đỏ, lâu trôi</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-custom">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/products" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Hủy bỏ
+                        </a>
+                        <div>
+                            <button type="submit" name="action" value="draft" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-save me-2"></i>
+                                Lưu nháp
+                            </button>
+                            <button type="submit" name="action" value="publish" class="btn btn-primary">
+                                <i class="fas fa-check me-2"></i>
+                                <%= product ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm' %>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    // Image preview functionality
+    function previewImages(input) {
+        const previewContainer = document.getElementById('imagePreview');
+        previewContainer.innerHTML = '';
+
+        if (input.files && input.files.length > 0) {
+            Array.from(input.files).slice(0, 5).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const col = document.createElement('div');
+                    col.className = 'col-6 mb-2';
+
+                    col.innerHTML = `
+                        <div class="position-relative">
+                            <img src="${e.target.result}" 
+                                 alt="Preview ${index + 1}" 
+                                 class="img-fluid rounded border">
+                            <button type="button" 
+                                    class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1"
+                                    onclick="removePreviewImage(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            ${index === 0 ? `
+                                <span class="badge bg-primary position-absolute bottom-0 start-0 m-1">
+                                    Ảnh chính
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    previewContainer.appendChild(col);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    function removePreviewImage(button) {
+        button.closest('.col-6').remove();
+    }
+
+    function removeCurrentImage(imagePath) {
+        if (confirm('Bạn có chắc chắn muốn xóa hình ảnh này?')) {
+            // Add hidden input to mark image for deletion
+            const form = document.querySelector('form');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'remove_images[]';
+            input.value = imagePath;
+            form.appendChild(input);
+
+            // Remove the image element
+            event.target.closest('.col-6').remove();
+        }
+    }
+
+    // Auto-generate SKU based on product name
+    document.querySelector('input[name="name"]').addEventListener('input', function () {
+        const skuInput = document.querySelector('input[name="sku"]');
+        if (!skuInput.value) {
+            const sku = this.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, '')
+                .substring(0, 8) +
+                Math.random().toString(36).substring(2, 6).toUpperCase();
+            skuInput.value = sku;
+        }
+    });
+
+    // Price validation
+    document.querySelector('input[name="price"]').addEventListener('input', function () {
+        const originalPriceInput = document.querySelector('input[name="original_price"]');
+        const price = parseFloat(this.value);
+        const originalPrice = parseFloat(originalPriceInput.value);
+
+        if (originalPrice && price > originalPrice) {
+            alert('Giá bán không được lớn hơn giá gốc');
+            this.value = originalPrice;
+        }
+    });
+</script>
+
+<style>
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .image-preview {
+        max-height: 200px;
+        object-fit: cover;
+    }
+
+    .card-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+</style>

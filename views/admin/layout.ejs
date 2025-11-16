@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %> - Admin Dashboard
+    </title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a'
+                        },
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827'
+                        }
+                    }
+                }
+            },
+            corePlugins: {
+                preflight: false
+            }
+        }
+    </script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/admin-fixes.css">
+
+    <style>
+        :root {
+            --primary-blue: #3b82f6;
+            --primary-blue-dark: #1d4ed8;
+            --primary-blue-light: #dbeafe;
+            --sidebar-width: 280px;
+            --sidebar-collapsed: 70px;
+            --header-height: 70px;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #1f2937;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #374151;
+            color: white;
+            transition: var(--transition);
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed);
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid #374151;
+            text-align: center;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .brand-logo {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            font-size: 1.25rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar.collapsed .brand-logo {
+            margin-bottom: 0;
+        }
+
+        .brand-text {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #ffffff;
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .brand-text {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-nav {
+            padding: 1.5rem 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #9ca3af;
+            padding: 0 1rem 0.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar.collapsed .nav-section-title {
+            display: none;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0.75rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #d1d5db;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            position: relative;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            transform: translateX(4px);
+        }
+        }
+
+        .nav-link:hover::before,
+        .nav-link.active::before {
+            left: 0;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-link i {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .nav-link-text {
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .nav-link-text {
+            opacity: 0;
+            width: 0;
+            margin: 0;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed);
+        }
+
+        .top-header {
+            background: #ffffff;
+            backdrop-filter: blur(10px);
+            height: var(--header-height);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .toggle-sidebar {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            color: #6b7280;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-sidebar:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border-radius: 50px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: #f9fafb;
+            border-radius: 50px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-menu:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .page-content {
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 1050;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .page-content {
+                padding: 1rem;
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+        }
+
+        /* Modern Cards and Components */
+        .stats-card {
+            background: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid #e5e7eb;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .stats-label {
+            color: #6b7280;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .card-modern {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .card-modern:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header-modern {
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: var(--transition);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid #3b82f6;
+            color: #3b82f6;
+            background: transparent;
+            border-radius: var(--border-radius);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-outline-primary:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .table-modern {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+        }
+
+        .table thead th {
+            background: #f9fafb;
+            color: #374151;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0.75rem;
+        }
+
+        .table tbody tr:hover {
+            background: #f3f4f6;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .badge {
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .table-modern thead th {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 1.25rem 1.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table-modern tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .table-modern tbody tr:hover {
+            background: rgba(255, 107, 157, 0.05);
+            transform: scale(1.01);
+        }
+
+        .table-modern tbody td {
+            padding: 1.25rem 1.5rem;
+            vertical-align: middle;
+            border: none;
+        }
+
+        .badge-modern {
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-modern {
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .form-modern:focus {
+            border-color: #ff6b9d;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.15);
+            background: white;
+        }
+
+        .alert-modern {
+            border-radius: var(--border-radius);
+            border: none;
+            padding: 1.25rem 1.5rem;
+            backdrop-filter: blur(20px);
+            border-left: 4px solid;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .page-content {
+                padding: 1.5rem;
+            }
+
+            .stats-number {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 992px) {
+            :root {
+                --sidebar-width: 280px;
+            }
+
+            .page-title {
+                font-size: 1.25rem;
+            }
+
+            .header-right .user-menu span {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 100vw;
+                max-width: 320px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .page-content {
+                padding: 1rem;
+            }
+
+            .top-header {
+                padding: 0 1rem;
+                height: 70px;
+            }
+
+            .page-title {
+                font-size: 1.1rem;
+            }
+
+            .stats-card {
+                padding: 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .stats-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+
+            .stats-number {
+                font-size: 1.75rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-left {
+                gap: 0.5rem;
+            }
+
+            .page-title {
+                display: none;
+            }
+
+            .user-menu {
+                padding: 0.375rem 0.75rem;
+            }
+
+            .user-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            }
+
+            .top-header {
+                background: rgba(45, 55, 72, 0.95);
+                border-bottom-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .page-title {
+                color: white;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body class="admin-body">
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Modern Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <!-- Brand Section -->
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="brand-text">Admin Panel</div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav">
+            <!-- Main Menu -->
+            <div class="nav-section">
+                <div class="nav-section-title">Main</div>
+                <div class="nav-item">
+                    <a href="/admin/dashboard" class="nav-link <%= currentPage === 'dashboard' ? 'active' : '' %>">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="nav-link-text">Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/products" class="nav-link <%= currentPage === 'products' ? 'active' : '' %>">
+                        <i class="fas fa-box-open"></i>
+                        <span class="nav-link-text">Products</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/orders" class="nav-link <%= currentPage === 'orders' ? 'active' : '' %>">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span class="nav-link-text">Orders</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Customer Management -->
+            <div class="nav-section">
+                <div class="nav-section-title">Customers</div>
+                <div class="nav-item">
+                    <a href="/admin/users" class="nav-link <%= currentPage === 'users' ? 'active' : '' %>">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-link-text">User List</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/admin/reviews" class="nav-link <%= currentPage === 'reviews' ? 'active' : '' %>">
+                        <i class="fas fa-star"></i>
+                        <span class="nav-link-text">Reviews</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Analytics -->
+            <div class="nav-section">
+                <div class="nav-section-title">Reports</div>
+                <div class="nav-item">
+                    <a href="/admin/analytics" class="nav-link <%= currentPage === 'analytics' ? 'active' : '' %>">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="nav-link-text">Analytics</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- External Links -->
+            <div class="nav-section">
+                <div class="nav-section-title">Other</div>
+                <div class="nav-item">
+                    <a href="/cosmetics-shop/product" target="_blank" class="nav-link">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span class="nav-link-text">View Website</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/" class="nav-link" onclick="return confirm('Are you sure you want to logout?')">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="nav-link-text">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content" id="mainContent">
+        <!-- Modern Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">
+                    <%= title %>
+                </h1>
+            </div>
+
+            <div class="header-right">
+                <div class="user-menu" data-bs-toggle="dropdown">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>Admin</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="/"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Alerts -->
+            <% if (typeof success !=='undefined' || req.query.success) { %>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <%= success || req.query.success %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <% } %>
+
+                    <% if (typeof error !=='undefined' || req.query.error) { %>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <%= error || req.query.error %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <% } %>
+
+                            <%- body %>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modern JS Functionality -->
+    <script>
+        // Modern Admin Dashboard JavaScript
+        class AdminDashboard {
+            constructor() {
+                this.sidebar = document.getElementById('sidebar');
+                this.mainContent = document.getElementById('mainContent');
+                this.toggleBtn = document.getElementById('toggleSidebar');
+                this.init();
+            }
+
+            init() {
+                this.setupSidebarToggle();
+                this.setupResponsive();
+                this.setupAnimations();
+                this.setupAlerts();
+                this.setupTooltips();
+            }
+
+            setupSidebarToggle() {
+                if (this.toggleBtn) {
+                    this.toggleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.toggleSidebar();
+                    });
+                }
+
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 &&
+                        !this.sidebar.contains(e.target) &&
+                        !this.toggleBtn.contains(e.target) &&
+                        this.sidebar.classList.contains('show')) {
+                        this.sidebar.classList.remove('show');
+                    }
+                });
+            }
+
+            toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    const isOpen = this.sidebar.classList.toggle('show');
+                    if (this.overlay) {
+                        this.overlay.classList.toggle('show', isOpen);
+                    }
+                } else {
+                    this.sidebar.classList.toggle('collapsed');
+                    this.mainContent.classList.toggle('expanded');
+
+                    // Save preference
+                    localStorage.setItem('sidebarCollapsed',
+                        this.sidebar.classList.contains('collapsed'));
+                }
+            }
+
+            closeSidebar() {
+                this.sidebar.classList.remove('show');
+                if (this.overlay) {
+                    this.overlay.classList.remove('show');
+                }
+            }
+
+            setupResponsive() {
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth <= 768) {
+                        this.sidebar.classList.remove('collapsed');
+                        this.mainContent.classList.remove('expanded');
+                    } else {
+                        this.sidebar.classList.remove('show');
+                        if (this.overlay) {
+                            this.overlay.classList.remove('show');
+                        }
+                        // Restore saved preference
+                        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                        if (isCollapsed) {
+                            this.sidebar.classList.add('collapsed');
+                            this.mainContent.classList.add('expanded');
+                        }
+                    }
+                });
+
+                // Initial setup based on screen size and saved preference
+                if (window.innerWidth <= 768) {
+                    this.sidebar.classList.remove('collapsed', 'show');
+                    this.mainContent.classList.remove('expanded');
+                    if (this.overlay) {
+                        this.overlay.classList.remove('show');
+                    }
+                } else {
+                    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                    if (isCollapsed) {
+                        this.sidebar.classList.add('collapsed');
+                        this.mainContent.classList.add('expanded');
+                    }
+                }
+            }
+
+            setupAnimations() {
+                // Add entrance animations
+                const animatedElements = document.querySelectorAll('.stats-card, .card-modern');
+
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry, index) => {
+                        if (entry.isIntersecting) {
+                            setTimeout(() => {
+                                entry.target.style.opacity = '1';
+                                entry.target.style.transform = 'translateY(0)';
+                            }, index * 100);
+                        }
+                    });
+                }, observerOptions);
+
+                animatedElements.forEach(el => {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(30px)';
+                    el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    observer.observe(el);
+                });
+            }
+
+            setupAlerts() {
+                // Enhanced alert system
+                const alerts = document.querySelectorAll('.alert');
+
+                alerts.forEach(alert => {
+                    // Add close functionality
+                    const closeBtn = alert.querySelector('.btn-close');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            alert.style.transform = 'translateX(100%)';
+                            setTimeout(() => alert.remove(), 300);
+                        });
+                    }
+
+                    // Auto-hide after 5 seconds
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.style.transform = 'translateX(100%)';
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, 5000);
+                });
+            }
+
+            setupTooltips() {
+                // Initialize Bootstrap tooltips
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+
+            // Utility methods
+            showNotification(message, type = 'success') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+                alertDiv.style.cssText = `
+                    top: 20px; 
+                    right: 20px; 
+                    z-index: 9999; 
+                    min-width: 300px;
+                    animation: slideInRight 0.3s ease-out;
+                `;
+
+                alertDiv.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+
+                document.body.appendChild(alertDiv);
+
+                // Auto remove after 4 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.style.animation = 'slideOutRight 0.3s ease-in';
+                        setTimeout(() => alertDiv.remove(), 300);
+                    }
+                }, 4000);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.adminDashboard = new AdminDashboard();
+
+            // Add smooth scroll behavior
+            document.documentElement.style.scrollBehavior = 'smooth';
+
+            // Add loading states to forms
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function () {
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            });
+        });
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+
+    <%- typeof script !=='undefined' ? script : '' %>
+</body>
+
+</html>
