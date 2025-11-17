@@ -45,6 +45,10 @@ router.get("/dashboard", adminController.dashboard);
 
 // Products Management
 router.get("/products", adminController.products);
+router.get("/products/export", adminController.exportProducts); // <-- THÊM DÒNG NÀY
+router.get("/products/add", adminController.addProductForm);
+// ... (các route khác)
+router.get("/products", adminController.products);
 router.get("/products/add", adminController.addProductForm);
 router.post(
   "/products/add",

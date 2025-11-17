@@ -5,6 +5,8 @@ import {orderService} from "../services/orderService.js";
 import {commentService} from "../services/commentService.js";
 import fs from "fs";
 import path from "path";
+import ExcelJS from 'exceljs';
+// ... (các import khác)
 
 // Dashboard
 const dashboard = async (req, res, next) => {
@@ -156,8 +158,7 @@ const addProductForm = (req, res) => {
 const editProductForm = async (req, res, next) => {
   try {
     const {id} = req.params;
-    const product = await productService.getProductById(id);
-
+    const product = await productService.getOneById(id); // <-- SỬA TÊN HÀM
     if (!product) {
       return res.status(404).render("admin/products", {
         title: "Quản lý sản phẩm",
@@ -185,27 +186,65 @@ const addProduct = async (req, res, next) => {
   try {
     const productData = {...req.body};
 
-    // Handle uploaded images
+    // === LOGIC LƯU NHÁP MỚI ===
+    // 1. Lấy hành động (draft hay publish)
+    // Mặc định là 'publish' nếu không có (ví dụ: người dùng bấm Enter)
+    const action = productData.action || 'publish';
+    
+    // 2. Xóa 'action' khỏi data để không bị lỗi Validation
+    delete productData.action;
+
+    // 3. Đặt trạng thái (status) dựa trên hành động
+    if (action === 'draft') {
+      productData.status = 'draft';
+    } else {
+      productData.status = 'active'; // Đảm bảo là 'active' khi đăng
+    }
+    // === KẾT THÚC LOGIC MỚI ===
+
+
+    // === DỌN DẸP DỮ LIỆU (Giữ nguyên) ===
+    if (productData.name) productData.name = productData.name.trim();
+    if (productData.description) productData.description = productData.description.trim();
+    
+    if (productData.size && typeof productData.size === 'string') {
+      productData.size = productData.size.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (!productData.size) {
+      productData.size = [];
+    }
+    if (productData.color && typeof productData.color === 'string') {
+      productData.color = productData.color.split(',').map(c => c.trim()).filter(Boolean);
+    } else if (!productData.color) {
+      productData.color = [];
+    }
+    // === KẾT THÚC DỌN DẸP ===
+
+
+    // Handle uploaded images (Giữ nguyên)
     if (req.files && req.files.length > 0) {
       productData.images = req.files.map((file) => `/uploads/${file.filename}`);
     }
 
-    // Convert string numbers to integers
+    // Convert string numbers to integers (Giữ nguyên)
     if (productData.price) productData.price = parseInt(productData.price);
     if (productData.original_price)
       productData.original_price = parseInt(productData.original_price);
     if (productData.stock) productData.stock = parseInt(productData.stock);
 
-    // Handle boolean fields
+    // Handle boolean fields (Giữ nguyên)
     productData.featured = productData.featured === "on";
     productData.new_arrival = productData.new_arrival === "on";
 
-    // Set default status
-    if (!productData.status) productData.status = "active";
-
+    // Lưu vào DB
     await productService.createNew(productData);
 
-    res.redirect("/admin/products?success=Thêm sản phẩm thành công");
+    // === THÔNG BÁO TÙY CHỈNH MỚI ===
+    if (action === 'draft') {
+      res.redirect("/admin/products?success=Đã lưu nháp sản phẩm thành công");
+    } else {
+      res.redirect("/admin/products?success=Thêm sản phẩm thành công");
+    }
+
   } catch (error) {
     console.error("Add product error:", error);
     res.render("admin/product-form", {
@@ -223,40 +262,74 @@ const editProduct = async (req, res, next) => {
     const {id} = req.params;
     const productData = {...req.body};
 
-    // Handle uploaded images
+    // === LOGIC LƯU NHÁP MỚI ===
+    // 1. Lấy hành động (draft hay publish)
+    const action = productData.action || 'publish';
+    
+    // 2. Xóa 'action' khỏi data
+    delete productData.action;
+
+    // 3. Đặt trạng thái (status)
+    if (action === 'draft') {
+      productData.status = 'draft';
+    } else {
+      productData.status = 'active';
+    }
+    // === KẾT THÚC LOGIC MỚI ===
+
+
+    // === DỌN DẸP DỮ LIỆU (Giữ nguyên) ===
+    if (productData.name) productData.name = productData.name.trim();
+    if (productData.description) productData.description = productData.description.trim();
+    
+    if (productData.size && typeof productData.size === 'string') {
+      productData.size = productData.size.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (productData.color && typeof productData.color === 'string') {
+      productData.color = productData.color.split(',').map(c => c.trim()).filter(Boolean);
+    }
+    // === KẾT THÚC DỌN DẸP ===
+
+
+    // Handle uploaded images (Giữ nguyên)
     if (req.files && req.files.length > 0) {
       productData.images = req.files.map((file) => `/uploads/${file.filename}`);
     }
 
-    // Handle removed images
+    // Handle removed images (Giữ nguyên)
     if (req.body.remove_images) {
-      // Logic to remove images from storage
       const removeImages = Array.isArray(req.body.remove_images)
         ? req.body.remove_images
         : [req.body.remove_images];
 
-      // Remove files from storage
       removeImages.forEach((imagePath) => {
-        const fullPath = path.join(process.cwd(), "public", imagePath);
+        const fullPath = path.join(process.cwd(), imagePath);
         if (fs.existsSync(fullPath)) {
           fs.unlinkSync(fullPath);
         }
       });
     }
 
-    // Convert string numbers to integers
+    // Convert string numbers to integers (Giữ nguyên)
     if (productData.price) productData.price = parseInt(productData.price);
     if (productData.original_price)
       productData.original_price = parseInt(productData.original_price);
     if (productData.stock) productData.stock = parseInt(productData.stock);
 
-    // Handle boolean fields
+    // Handle boolean fields (Giữ nguyên)
     productData.featured = productData.featured === "on";
     productData.new_arrival = productData.new_arrival === "on";
 
+    // Cập nhật DB
     await productService.updateOneById(id, productData);
 
-    res.redirect("/admin/products?success=Cập nhật sản phẩm thành công");
+    // === THÔNG BÁO TÙY CHỈNH MỚI ===
+    if (action === 'draft') {
+      res.redirect("/admin/products?success=Đã lưu nháp thành công");
+    } else {
+      res.redirect("/admin/products?success=Cập nhật sản phẩm thành công");
+    }
+
   } catch (error) {
     console.error("Edit product error:", error);
     res.redirect(
@@ -270,10 +343,11 @@ const deleteProduct = async (req, res, next) => {
     const {id} = req.params;
 
     // Get product to delete images
-    const product = await productService.getProductById(id);
+    const product = await productService.getOneById(id); // <-- SỬA TÊN HÀM
     if (product && product.images) {
       product.images.forEach((imagePath) => {
-        const fullPath = path.join(process.cwd(), "public", imagePath);
+        // === SỬA LỖI ĐƯỜNG DẪN + KIỂM TRA FILE TỒN TẠI ===
+        const fullPath = path.join(process.cwd(), imagePath);
         if (fs.existsSync(fullPath)) {
           fs.unlinkSync(fullPath);
         }
@@ -295,10 +369,11 @@ const deleteMultipleProducts = async (req, res, next) => {
 
     // Delete images for all products
     for (const id of ids) {
-      const product = await productService.getProductById(id);
+      const product = await productService.getOneById(id); // <-- SỬA TÊN HÀM
       if (product && product.images) {
         product.images.forEach((imagePath) => {
-          const fullPath = path.join(process.cwd(), "public", imagePath);
+          // === SỬA LỖI ĐƯỜNG DẪN + KIỂM TRA FILE TỒN TẠI ===
+          const fullPath = path.join(process.cwd(), imagePath);
           if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
           }
@@ -317,38 +392,7 @@ const deleteMultipleProducts = async (req, res, next) => {
 // Orders Management
 const orders = async (req, res, next) => {
   try {
-    // Mock orders data
-    const mockOrders = [
-      {
-        _id: "507f1f77bcf86cd799439011",
-        user: {name: "Nguyễn Thị Mai", email: "mai@email.com"},
-        total: 850000,
-        status: "pending",
-        createdAt: new Date(),
-      },
-      {
-        _id: "507f1f77bcf86cd799439012",
-        user: {name: "Trần Văn Nam", email: "nam@email.com"},
-        total: 1250000,
-        status: "delivered",
-        createdAt: new Date(Date.now() - 86400000),
-      },
-      {
-        _id: "507f1f77bcf86cd799439013",
-        user: {name: "Lê Thị Hoa", email: "hoa@email.com"},
-        total: 950000,
-        status: "shipped",
-        createdAt: new Date(Date.now() - 172800000),
-      },
-      {
-        _id: "507f1f77bcf86cd799439014",
-        user: {name: "Phạm Minh Tuấn", email: "tuan@email.com"},
-        total: 1650000,
-        status: "confirmed",
-        createdAt: new Date(Date.now() - 259200000),
-      },
-    ];
-
+    const mockOrders = []; // Dữ liệu giả
     res.render("admin/orders", {
       title: "Quản lý đơn hàng",
       currentPage: "orders",
@@ -363,46 +407,7 @@ const orders = async (req, res, next) => {
 // Users Management
 const users = async (req, res, next) => {
   try {
-    // Mock users data
-    const mockUsers = [
-      {
-        _id: "user001",
-        name: "Nguyễn Thị Mai",
-        email: "mai@email.com",
-        phone: "0901234567",
-        totalOrders: 5,
-        status: "active",
-        createdAt: new Date(Date.now() - 86400000 * 30),
-      },
-      {
-        _id: "user002",
-        name: "Trần Văn Nam",
-        email: "nam@email.com",
-        phone: "0912345678",
-        totalOrders: 3,
-        status: "active",
-        createdAt: new Date(Date.now() - 86400000 * 15),
-      },
-      {
-        _id: "user003",
-        name: "Lê Thị Hoa",
-        email: "hoa@email.com",
-        phone: "0923456789",
-        totalOrders: 8,
-        status: "active",
-        createdAt: new Date(Date.now() - 86400000 * 60),
-      },
-      {
-        _id: "user004",
-        name: "Phạm Minh Tuấn",
-        email: "tuan@email.com",
-        phone: "0934567890",
-        totalOrders: 1,
-        status: "inactive",
-        createdAt: new Date(Date.now() - 86400000 * 5),
-      },
-    ];
-
+    const mockUsers = []; // Dữ liệu giả
     res.render("admin/users", {
       title: "Quản lý khách hàng",
       currentPage: "users",
@@ -417,58 +422,7 @@ const users = async (req, res, next) => {
 // Reviews Management
 const reviews = async (req, res, next) => {
   try {
-    // Mock reviews data
-    const mockReviews = [
-      {
-        _id: "review001",
-        product: {
-          name: "Kem dưỡng da Nivea",
-          category: "Chăm sóc da",
-          images: ["/static/images/sample-product.jpg"],
-        },
-        user: {
-          name: "Nguyễn Thị Mai",
-          email: "mai@email.com",
-        },
-        rating: 5,
-        comment: "Sản phẩm rất tốt, tôi rất hài lòng",
-        status: "approved",
-        createdAt: new Date(Date.now() - 86400000),
-      },
-      {
-        _id: "review002",
-        product: {
-          name: "Son môi Maybelline",
-          category: "Trang điểm",
-          images: ["/static/images/sample-product2.jpg"],
-        },
-        user: {
-          name: "Trần Thị Lan",
-          email: "lan@email.com",
-        },
-        rating: 4,
-        comment: "Màu đẹp, giữ màu lâu",
-        status: "pending",
-        createdAt: new Date(Date.now() - 172800000),
-      },
-      {
-        _id: "review003",
-        product: {
-          name: "Nước hoa Chanel",
-          category: "Nước hoa",
-          images: ["/static/images/sample-product3.jpg"],
-        },
-        user: {
-          name: "Lê Văn Hùng",
-          email: "hung@email.com",
-        },
-        rating: 3,
-        comment: "Hương thơm nhẹ nhàng",
-        status: "approved",
-        createdAt: new Date(Date.now() - 259200000),
-      },
-    ];
-
+    const mockReviews = []; // Dữ liệu giả
     res.render("admin/reviews", {
       title: "Quản lý đánh giá",
       currentPage: "reviews",
@@ -483,20 +437,7 @@ const reviews = async (req, res, next) => {
 // Analytics
 const analytics = async (req, res, next) => {
   try {
-    // Mock analytics data
-    const analyticsData = {
-      totalRevenue: 25750000,
-      totalOrders: 156,
-      totalCustomers: 127,
-      conversionRate: 2.8,
-      newCustomers: 28,
-      successfulOrders: 142,
-      revenueGrowth: 15,
-      ordersGrowth: 8,
-      customersGrowth: 12,
-      conversionGrowth: 0.5,
-    };
-
+    const analyticsData = {}; // Dữ liệu giả
     res.render("admin/analytics", {
       title: "Phân tích thống kê",
       currentPage: "analytics",
@@ -504,6 +445,52 @@ const analytics = async (req, res, next) => {
       req,
     });
   } catch (error) {
+    next(error);
+  }
+};
+// Thêm hàm này vào cuối file controller
+const exportProducts = async (req, res, next) => {
+  try {
+    // 1. Lấy tất cả dữ liệu sản phẩm
+    const products = await productService.getAllProducts();
+
+    // 2. Tạo một file Excel (Workbook) mới
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sản phẩm'); // Tên của sheet
+
+    // 3. Định nghĩa các cột (headers)
+    // 'header' là tên cột, 'key' là tên trường trong data, 'width' là độ rộng
+    worksheet.columns = [
+      { header: 'ID', key: '_id', width: 30 },
+      { header: 'Tên sản phẩm', key: 'name', width: 40 },
+      { header: 'Danh mục', key: 'category', width: 20 },
+      { header: 'Thương hiệu', key: 'brand', width: 20 },
+      { header: 'Giá bán (VNĐ)', key: 'price', width: 15, style: { numFmt: '#,##0' } },
+      { header: 'Tồn kho', key: 'stock', width: 10 },
+      { header: 'Trạng thái', key: 'status', width: 15 }
+    ];
+
+    // 4. Thêm dữ liệu (rows) vào file
+    products.forEach(product => {
+      worksheet.addRow(product);
+    });
+
+    // 5. Thiết lập Header để trình duyệt hiểu đây là 1 file tải về
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="danh_sach_san_pham.xlsx"' // Tên file khi tải về
+    );
+
+    // 6. Ghi file Excel ra và gửi về cho người dùng
+    await workbook.xlsx.write(res);
+    res.end(); // Kết thúc
+
+  } catch (error) {
+    // Nếu có lỗi, chuyển cho middleware xử lý
     next(error);
   }
 };
@@ -521,4 +508,5 @@ export const adminController = {
   users,
   reviews,
   analytics,
+  exportProducts // <-- THÊM HÀM MỚI VÀO ĐÂY
 };

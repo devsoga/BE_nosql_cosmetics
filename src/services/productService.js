@@ -98,6 +98,23 @@ const getAllCategories = async () => {
     throw error;
   }
 };
+const updateOneById = async (id, data) => {
+  try {
+    const result = await productModel.updateProduct(id, data);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const deleteOneById = async (id) => {
+  try {
+    const result = await productModel.deleteProduct(id);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const getAllBrands = async () => {
   try {
@@ -120,4 +137,6 @@ export const productService = {
   getPopularProducts,
   getAllCategories,
   getAllBrands,
+  updateOneById,
+  deleteOneById,
 };

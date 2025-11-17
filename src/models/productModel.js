@@ -8,25 +8,67 @@ import {ObjectId} from "mongodb";
 const PRODUCT_COLLECTION_NAME = "products";
 
 // validate 1 lan nua truoc khi dua data vao CSDL
+// const PRODUCT_COLLECTION_SCHEMA = Joi.object({
+//   name: Joi.string().required().trim().strict(),
+//   price: Joi.number().required(),
+//   description: Joi.string().required().trim().strict(),
+//   image: Joi.array()
+//     .items(Joi.string().required().trim().strict())
+//     .min(1)
+//     .required(),
+//   category: Joi.string().default(""),
+//   brand: Joi.string().default(""),
+//   size: Joi.array().items(Joi.string().trim()).default([]),
+//   color: Joi.array().items(Joi.string().trim()).default([]),
+//   stock: Joi.number().integer().min(0).default(0),
+//   createAt: Joi.date()
+//     .timestamp("javascript")
+//     .default(() => Date.now()),
+//   _destroy: Joi.boolean().default(false),
+// });
+
+// // thuc thi ham validation
+// const validateBeforeCreate = async (data) => {
+//   return await PRODUCT_COLLECTION_SCHEMA.validateAsync(data, {
+//     abortEarly: false,
+//   });
+// };
+// Thay thế toàn bộ PRODUCT_COLLECTION_SCHEMA cũ bằng cái này
 const PRODUCT_COLLECTION_SCHEMA = Joi.object({
   name: Joi.string().required().trim().strict(),
-  price: Joi.number().required(),
+  price: Joi.number().required().min(0),
   description: Joi.string().required().trim().strict(),
-  image: Joi.array()
+  
+  // Đã sửa từ 'image' thành 'images' để khớp với controller
+  images: Joi.array()
     .items(Joi.string().required().trim().strict())
     .min(1)
     .required(),
-  category: Joi.string().default(""),
-  brand: Joi.string().default(""),
+
+  category: Joi.string().trim().strict().default(""),
+  brand: Joi.string().trim().strict().default(""),
+  
+  // Vẫn giữ .array()
   size: Joi.array().items(Joi.string().trim()).default([]),
   color: Joi.array().items(Joi.string().trim()).default([]),
+  
   stock: Joi.number().integer().min(0).default(0),
+
+  // === Thêm các trường mới mà Controller đang gửi ===
+  original_price: Joi.number().min(0).default(0),
+  sku: Joi.string().trim().allow(null, ""), // Cho phép null hoặc rỗng
+  ingredients: Joi.string().trim().allow(null, ""),
+  usage_instructions: Joi.string().trim().allow(null, ""),
+  status: Joi.string().trim().valid('active', 'draft').default('active'),  keywords: Joi.string().trim().allow(null, ""),
+  featured: Joi.boolean().default(false),
+  new_arrival: Joi.boolean().default(false),
+  // === Hết các trường mới ===
+
   createAt: Joi.date()
     .timestamp("javascript")
     .default(() => Date.now()),
   _destroy: Joi.boolean().default(false),
 });
-
 // thuc thi ham validation
 const validateBeforeCreate = async (data) => {
   return await PRODUCT_COLLECTION_SCHEMA.validateAsync(data, {
@@ -75,7 +117,36 @@ const getAllProducts = async () => {
     throw new Error(error);
   }
 };
+const updateProduct = async (id, data) => {
+  try {
+    // Lọc ra các trường không được phép cập nhật
+    delete data.createAt;
+    delete data._id; // Rất quan trọng, không cho phép cập nhật _id
 
+    const result = await getDB()
+      .collection(PRODUCT_COLLECTION_NAME)
+      .updateOne(
+        { _id: new ObjectId(id) }, // Tìm sản phẩm bằng ID
+        { $set: data }             // $set dùng để cập nhật các trường trong data
+      );
+    return result;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+const deleteProduct = async (id) => {
+  try {
+    const result = await getDB()
+      .collection(PRODUCT_COLLECTION_NAME)
+      .deleteOne({
+        _id: new ObjectId(id),
+      });
+    return result;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
 const searchProducts = async ({name}) => {
   try {
     const result = await getDB()
@@ -218,4 +289,6 @@ export const productModel = {
   findPopularProducts,
   getDistinctCategories,
   getDistinctBrands,
+  updateProduct,
+  deleteProduct,
 };
