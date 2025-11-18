@@ -1,22 +1,20 @@
-<!-- Modern Dashboard Header -->
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
         <h1 class="display-6 fw-bold mb-2" style="color: #111827;">
             <i class="fas fa-chart-line me-3" style="color: #3b82f6;"></i>Dashboard
         </h1>
-        <p class="text-muted fs-5 mb-0">Welcome back! Here's an overview of your cosmetics store.</p>
+        <p class="text-muted fs-5 mb-0">Chào mừng trở lại! Đây là tổng quan cửa hàng mỹ phẩm của bạn.</p>
     </div>
     <div class="d-flex gap-3">
         <button class="btn btn-outline-primary">
-            <i class="fas fa-download me-2"></i>Export Report
+            <i class="fas fa-download me-2"></i>Xuất Báo Cáo
         </button>
-        <button class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Add Product
-        </button>
+        <a href="/admin/products/add" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm Sản Phẩm
+        </a>
     </div>
 </div>
 
-<!-- Modern Stats Cards -->
 <div class="row g-4 mb-5">
     <div class="col-xl-3 col-md-6">
         <div class="stats-card">
@@ -26,10 +24,10 @@
             <div class="stats-number">
                 <%= stats.totalOrders %>
             </div>
-            <div class="stats-label">Total Orders</div>
+            <div class="stats-label">Tổng Đơn Hàng</div>
             <div class="mt-2">
                 <small class="text-success">
-                    <i class="fas fa-arrow-up me-1"></i>+12% from last month
+                    <i class="fas fa-arrow-up me-1"></i>+12% so với tháng trước
                 </small>
             </div>
         </div>
@@ -43,10 +41,10 @@
             <div class="stats-number">
                 <%= stats.totalProducts %>
             </div>
-            <div class="stats-label">Products</div>
+            <div class="stats-label">Sản Phẩm</div>
             <div class="mt-2">
                 <small class="text-info">
-                    <i class="fas fa-info-circle me-1"></i>Active
+                    <i class="fas fa-info-circle me-1"></i>Đang hoạt động
                 </small>
             </div>
         </div>
@@ -60,10 +58,10 @@
             <div class="stats-number">
                 <%= stats.totalUsers %>
             </div>
-            <div class="stats-label">Customers</div>
+            <div class="stats-label">Khách Hàng</div>
             <div class="mt-2">
                 <small class="text-success">
-                    <i class="fas fa-arrow-up me-1"></i>+8% this week
+                    <i class="fas fa-arrow-up me-1"></i>+8% tuần này
                 </small>
             </div>
         </div>
@@ -75,22 +73,20 @@
                 <i class="fas fa-dollar-sign"></i>
             </div>
             <div class="stats-number">
-                <%= new Intl.NumberFormat('en-US', { style: 'currency' , currency: 'USD' , notation: 'compact'
+                <%= new Intl.NumberFormat('vi-VN', { style: 'currency' , currency: 'VND' , notation: 'compact'
                     }).format(stats.totalRevenue) %>
             </div>
-            <div class="stats-label">Monthly Revenue</div>
+            <div class="stats-label">Tổng Doanh Thu</div>
             <div class="mt-2">
                 <small class="text-success">
-                    <i class="fas fa-arrow-up me-1"></i>+15% from last month
+                    <i class="fas fa-arrow-up me-1"></i>+15% so với tháng trước
                 </small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modern Charts Section -->
 <div class="row g-4 mb-5">
-    <!-- Revenue Trend Chart -->
     <div class="col-lg-8">
         <div class="card-modern">
             <div class="card-header-modern">
@@ -98,18 +94,18 @@
                     <div>
                         <h5 class="mb-1 fw-bold">
                             <i class="fas fa-chart-area me-2 text-primary"></i>
-                            Revenue Trends
+                            Xu Hướng Doanh Thu
                         </h5>
-                        <p class="text-muted mb-0 fs-6">Revenue for the last 7 days</p>
+                        <p class="text-muted mb-0 fs-6">Doanh thu trong 7 ngày qua</p>
                     </div>
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="fas fa-calendar me-1"></i>7 days
+                            <i class="fas fa-calendar me-1"></i>7 ngày
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">7 days</a></li>
-                            <li><a class="dropdown-item" href="#">30 days</a></li>
-                            <li><a class="dropdown-item" href="#">90 days</a></li>
+                            <li><a class="dropdown-item" href="#">7 ngày</a></li>
+                            <li><a class="dropdown-item" href="#">30 ngày</a></li>
+                            <li><a class="dropdown-item" href="#">90 ngày</a></li>
                         </ul>
                     </div>
                 </div>
@@ -120,15 +116,14 @@
         </div>
     </div>
 
-    <!-- Category Distribution -->
     <div class="col-lg-4">
         <div class="card-modern">
             <div class="card-header-modern">
                 <h5 class="mb-1 fw-bold">
                     <i class="fas fa-chart-pie me-2 text-success"></i>
-                    Category Distribution
+                    Phân Bố Danh Mục
                 </h5>
-                <p class="text-muted mb-0 fs-6">Products by category</p>
+                <p class="text-muted mb-0 fs-6">Sản phẩm theo loại</p>
             </div>
             <div class="card-body">
                 <canvas id="categoryChart"></canvas>
@@ -137,30 +132,28 @@
     </div>
 </div>
 
-<!-- Recent Orders & Top Products -->
 <div class="row">
-    <!-- Recent Orders -->
     <div class="col-lg-8 mb-4">
         <div class="card card-custom">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-clock me-2"></i>
-                    Recent Orders
+                    Đơn Hàng Gần Đây
                 </h5>
                 <a href="/admin/orders" class="btn btn-sm btn-outline-primary">
-                    View All
+                    Xem Tất Cả
                 </a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table mb-0">
+                    <table class="table mb-0 align-middle">
                         <thead>
                             <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Date</th>
+                                <th>Mã Đơn</th>
+                                <th>Khách Hàng</th>
+                                <th>Tổng Tiền</th>
+                                <th>Trạng Thái</th>
+                                <th>Ngày Đặt</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -168,60 +161,58 @@
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
                                         <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                        No orders yet
+                                        Chưa có đơn hàng nào
                                     </td>
                                 </tr>
-                                <% } else { %>
-                                    <% recentOrders.forEach(order=> { %>
-                                        <tr>
-                                            <td>
-                                                <span class="fw-bold">#<%= order._id.toString().slice(-6).toUpperCase()
-                                                        %></span>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div
-                                                        class="avatar-sm bg-light rounded-circle me-2 d-flex align-items-center justify-content-center">
-                                                        <i class="fas fa-user text-muted"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-medium">
-                                                            <%= order.shipping_address?.name || 'N/A' %>
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            <%= order.user_id %>
-                                                        </small>
+                            <% } else { %>
+                                <% recentOrders.forEach(order=> { %>
+                                    <tr>
+                                        <td>
+                                            <span class="fw-bold text-primary">#<%= order._id.toString().slice(-6).toUpperCase() %></span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-light rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-user text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-medium">
+                                                        <% if (order.customerDetails) { %>
+                                                            <%= order.customerDetails.firstName %> <%= order.customerDetails.lastName %>
+                                                        <% } else { %>
+                                                            <%= order.firstName %> <%= order.lastName %>
+                                                        <% } %>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td>
-                                                <span class="fw-bold text-success">
-                                                    <%= new Intl.NumberFormat('vi-VN', { style: 'currency' ,
-                                                        currency: 'VND' }).format(order.total_price) %>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <% let statusClass='' ; let statusText='' ; switch(order.status) {
-                                                    case 'pending' : statusClass='bg-warning' ; statusText='Chờ xử lý' ;
-                                                    break; case 'processing' : statusClass='bg-info' ;
-                                                    statusText='Đang xử lý' ; break; case 'shipped' :
-                                                    statusClass='bg-primary' ; statusText='Đã giao' ; break;
-                                                    case 'delivered' : statusClass='bg-success' ;
-                                                    statusText='Hoàn thành' ; break; case 'cancelled' :
-                                                    statusClass='bg-danger' ; statusText='Đã hủy' ; break; default:
-                                                    statusClass='bg-secondary' ; statusText=order.status; } %>
-                                                    <span class="badge <%= statusClass %>">
-                                                        <%= statusText %>
-                                                    </span>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    <%= new Date(order.created_at).toLocaleDateString('vi-VN') %>
-                                                </small>
-                                            </td>
-                                        </tr>
-                                        <% }) %>
-                                            <% } %>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-success">
+                                                <%= new Intl.NumberFormat('vi-VN', { style: 'currency' ,
+                                                    currency: 'VND' }).format(order.totalPriceOrder) %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <% 
+                                                let statusClass = 'bg-secondary';
+                                                if(order.status === 'pending') statusClass = 'bg-warning';
+                                                else if(order.status === 'confirmed') statusClass = 'bg-info';
+                                                else if(order.status === 'shipped') statusClass = 'bg-primary';
+                                                else if(order.status === 'delivered') statusClass = 'bg-success';
+                                                else if(order.status === 'cancelled') statusClass = 'bg-danger';
+                                            %>
+                                            <span class="badge <%= statusClass %>">
+                                                <%= order.status %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <%= new Date(order.createAt).toLocaleDateString('vi-VN') %>
+                                            </small>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>
@@ -229,63 +220,57 @@
         </div>
     </div>
 
-    <!-- Top Products -->
     <div class="col-lg-4 mb-4">
         <div class="card card-custom">
             <div class="card-header bg-transparent">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-fire me-2"></i>
-                    Sản phẩm bán chạy
+                    Sản Phẩm Mới Nhất
                 </h5>
             </div>
             <div class="card-body">
                 <% if (topProducts.length===0) { %>
                     <div class="text-center py-4 text-muted">
                         <i class="fas fa-box-open fa-2x mb-2"></i>
-                        <p>Chưa có dữ liệu bán hàng</p>
+                        <p>Chưa có sản phẩm nào</p>
                     </div>
-                    <% } else { %>
-                        <% topProducts.forEach((product, index)=> { %>
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="position-relative me-3">
-                                    <img src="<%= product.images && product.images[0] ? product.images[0] : '/static/images/no-image.jpg' %>"
-                                        alt="<%= product.name %>" class="rounded"
-                                        style="width: 50px; height: 50px; object-fit: cover;">
-                                    <span class="position-absolute top-0 start-0 badge bg-primary rounded-pill"
-                                        style="font-size: 0.7rem;">
-                                        #<%= index + 1 %>
-                                    </span>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">
-                                        <%= product.name %>
-                                    </h6>
-                                    <small class="text-muted">
-                                        Đã bán: <%= product.totalSold || 0 %> sản phẩm
-                                    </small>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-success">
-                                        <%= new Intl.NumberFormat('vi-VN', { style: 'currency' , currency: 'VND'
-                                            }).format(product.price) %>
-                                    </div>
+                <% } else { %>
+                    <% topProducts.forEach((product, index)=> { %>
+                        <div class="d-flex align-items-center mb-3 border-bottom pb-2">
+                            <div class="position-relative me-3">
+                                <img src="<%= product.images && product.images[0] ? product.images[0] : '/static/images/no-image.jpg' %>"
+                                    alt="<%= product.name %>" class="rounded"
+                                    style="width: 50px; height: 50px; object-fit: cover;">
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 text-truncate" style="max-width: 180px;">
+                                    <%= product.name %>
+                                </h6>
+                                <small class="text-muted">
+                                    Danh mục: <%= product.category || 'Chưa phân loại' %>
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-success">
+                                    <%= new Intl.NumberFormat('vi-VN', { style: 'currency' , currency: 'VND'
+                                        }).format(product.price) %>
                                 </div>
                             </div>
-                            <% }) %>
-                                <% } %>
+                        </div>
+                    <% }) %>
+                <% } %>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
 <div class="row">
     <div class="col-12">
         <div class="card card-custom">
             <div class="card-header bg-transparent">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-bolt me-2"></i>
-                    Thao tác nhanh
+                    Thao Tác Nhanh
                 </h5>
             </div>
             <div class="card-body">
@@ -293,25 +278,25 @@
                     <div class="col-md-3 mb-3">
                         <a href="/admin/products/add" class="btn btn-outline-primary w-100 py-3">
                             <i class="fas fa-plus fa-2x mb-2 d-block"></i>
-                            Thêm sản phẩm mới
+                            Thêm Sản Phẩm
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="/admin/orders" class="btn btn-outline-info w-100 py-3">
-                            <i class="fas fa-list fa-2x mb-2 d-block"></i>
-                            Quản lý đơn hàng
+                        <a href="/admin/orders/add" class="btn btn-outline-info w-100 py-3">
+                            <i class="fas fa-cart-plus fa-2x mb-2 d-block"></i>
+                            Tạo Đơn Hàng
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="/admin/users" class="btn btn-outline-success w-100 py-3">
-                            <i class="fas fa-users fa-2x mb-2 d-block"></i>
-                            Danh sách khách hàng
+                        <a href="/admin/users/add" class="btn btn-outline-success w-100 py-3">
+                            <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                            Thêm Khách Hàng
                         </a>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a href="/admin/analytics" class="btn btn-outline-warning w-100 py-3">
-                            <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
-                            Xem báo cáo
+                        <a href="/admin/products/export" class="btn btn-outline-warning w-100 py-3">
+                            <i class="fas fa-file-excel fa-2x mb-2 d-block"></i>
+                            Xuất Báo Cáo SP
                         </a>
                     </div>
                 </div>
@@ -321,15 +306,22 @@
 </div>
 
 <script>
+    // Lấy dữ liệu từ EJS và gán vào biến JS (để tránh lỗi Expression expected)
+    const revenueLabels = JSON.parse('<%- JSON.stringify(((stats && stats.revenueChart) || []).map(item => new Date(item._id).toLocaleDateString("vi-VN"))) %>');
+    const revenueData = JSON.parse('<%- JSON.stringify(((stats && stats.revenueChart) || []).map(item => item.revenue)) %>');
+    
+    const categoryLabels = JSON.parse('<%- JSON.stringify(((stats && stats.categoryChart) || []).map(item => item._id)) %>');
+    const categoryData = JSON.parse('<%- JSON.stringify(((stats && stats.categoryChart) || []).map(item => item.count)) %>');
+
     // Revenue Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
     new Chart(revenueCtx, {
         type: 'line',
         data: {
-            labels: <%= JSON.stringify(((stats && stats.revenueChart) || []).map(item => new Date(item._id).toLocaleDateString('vi-VN'))) %>,
+            labels: revenueLabels,
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
-                data: <%= JSON.stringify(((stats && stats.revenueChart) || []).map(item => item.revenue)) %>,
+                data: revenueData,
                 borderColor: 'rgb(102, 126, 234)',
                 backgroundColor: 'rgba(102, 126, 234, 0.1)',
                 borderWidth: 3,
@@ -341,9 +333,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             },
             scales: {
                 y: {
@@ -351,9 +341,7 @@
                     ticks: {
                         callback: function (value) {
                             return new Intl.NumberFormat('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND',
-                                notation: 'compact'
+                                style: 'currency', currency: 'VND', notation: 'compact'
                             }).format(value);
                         }
                     }
@@ -367,26 +355,20 @@
     new Chart(categoryCtx, {
         type: 'doughnut',
         data: {
-            labels: <%= JSON.stringify(((stats && stats.categoryChart) || []).map(item => item._id)) %>,
+            labels: categoryLabels,
             datasets: [{
-                data: <%= JSON.stringify(((stats && stats.categoryChart) || []).map(item => item.count)) %>,
+                data: categoryData,
                 backgroundColor: [
-                    '#667eea',
-                    '#764ba2',
-                    '#f093fb',
-                    '#f5576c',
-                    '#4ecdc4',
-                    '#45b7d1'
-                ]
+                    '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4ecdc4', '#45b7d1'
+                ],
+                borderWidth: 0
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom'
-                }
+                legend: { position: 'right' }
             }
         }
     });

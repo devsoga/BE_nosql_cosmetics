@@ -8,13 +8,36 @@ import {ObjectId} from "mongodb";
 const USER_COLLECTION_NAME = "users";
 
 // validate 1 lan nua truoc khi dua data vao CSDL
+// const USER_COLLECTION_SCHEMA = Joi.object({
+//   email: Joi.string().email().required().trim().strict(),
+//   password: Joi.string().min(6).required().trim().strict(),
+//   username: Joi.string().required().trim().strict(),
+//   createAt: Joi.date()
+//     .timestamp("javascript")
+//     .default(() => Date.now()),
+//   _destroy: Joi.boolean().default(false),
+// });
+// validate 1 lan nua truoc khi dua data vao CSDL
 const USER_COLLECTION_SCHEMA = Joi.object({
   email: Joi.string().email().required().trim().strict(),
   password: Joi.string().min(6).required().trim().strict(),
-  username: Joi.string().required().trim().strict(),
-  createAt: Joi.date()
-    .timestamp("javascript")
-    .default(() => Date.now()),
+  username: Joi.string().trim().strict().allow(null, ""), 
+  
+  // === CÁC TRƯỜNG MỚI ===
+  firstName: Joi.string().trim().default(""),
+  lastName: Joi.string().trim().default(""),
+  phoneNumber: Joi.string().trim().default(""),
+  address: Joi.string().trim().default(""),
+  avatar: Joi.string().trim().default(""),
+  role: Joi.string().valid('client', 'admin').default('client'),
+
+  // THÊM DÒNG NÀY VÀO:
+  status: Joi.string().valid('active', 'inactive', 'blocked').default('active'),
+
+  verify: Joi.boolean().default(false),
+  // ======================
+
+  createAt: Joi.date().timestamp("javascript").default(() => Date.now()),
   _destroy: Joi.boolean().default(false),
 });
 
@@ -96,19 +119,85 @@ const findByEmail = async (email) => {
 const getAllUsers = async () => {
   try {
     const result = await getDB()
-      .collection(USER_COLLECTION_NAME)
-      .find({_destroy: false})
+      .collection("users") 
+      .aggregate([
+        { $match: { _destroy: false } },
+
+        // --- CODE CHUẨN: SO KHỚP OBJECT ID ---
+        // Vì cả 2 bên đều là ObjectId, ta so sánh trực tiếp
+        {
+          $lookup: {
+            from: "orders",
+            localField: "_id",      // ID của user (ObjectId)
+            foreignField: "userId", // userId bên orders (ObjectId - như trong ảnh Compass)
+            as: "userOrders"
+          }
+        },
+        // -------------------------------------
+
+        {
+          $addFields: {
+            totalOrders: { $size: "$userOrders" }
+          }
+        },
+
+        {
+          $project: {
+            userOrders: 0,
+            password: 0
+          }
+        },
+        
+        { $sort: { createdAt: -1 } }
+      ])
       .toArray();
+      
     return result;
   } catch (error) {
     throw new Error(error);
   }
 };
+// Hàm cập nhật thông tin user
+const updateUser = async (id, data) => {
+  try {
+    // Loại bỏ các trường nhạy cảm không được sửa trực tiếp
+    delete data._id;
+    delete data.email;      // Không cho đổi email
+    delete data.password;   // Không cho đổi pass (cần API riêng)
+    delete data.createdAt;
+    delete data.createAt;
 
+    const result = await getDB()
+      .collection("users") // Đảm bảo đúng tên collection
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: data }
+      );
+    return result;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+// Hàm xóa mềm user
+const deleteUser = async (id) => {
+  try {
+    const result = await getDB()
+      .collection(USER_COLLECTION_NAME)
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { _destroy: true } }
+      );
+    return result;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
 export const userModel = {
   findOneById,
   login,
   createNew,
   findByEmail,
   getAllUsers,
+  updateUser,
+  deleteUser,
 };

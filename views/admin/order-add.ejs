@@ -1,0 +1,276 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0">
+            <i class="fas fa-plus-circle me-2"></i>
+            Tạo đơn hàng mới
+        </h2>
+    </div>
+    <a href="/admin/orders" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Quay lại danh sách
+    </a>
+</div>
+
+<form method="POST" action="/admin/orders/add">
+    <div class="row">
+        <div class="col-lg-8">
+
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">1. Chọn khách hàng</h5>
+                </div>
+                <div class="card-body">
+                    <label class="form-label">Khách hàng <span class="text-danger">*</span></label>
+                    <select class="form-select" name="userId" id="customer-select" required> <option value="">-- Chọn một khách hàng --</option>
+                    <% if (locals.users && users.length > 0) { %>
+                        <% users.forEach(user => { %>
+                            <option value="<%= user._id %>"
+                                    data-firstname="<%= user.firstName || '' %>"
+                                    data-lastname="<%= user.lastName || '' %>"
+                                    data-email="<%= user.email || '' %>"
+                                    data-phone="<%= user.phoneNumber || '' %>"
+                            >
+                                <%= user.firstName || '(Chưa có tên)' %> <%= user.lastName || '' %> (<%= user.email %>)
+                            </option>
+                        <% }) %>
+                    <% } %>
+                </select>
+                </div>
+            </div>
+
+            <div class="card card-custom mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">2. Chọn sản phẩm</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-9">
+                            <label class="form-label">Sản phẩm có sẵn</label>
+                            <select class="form-select" id="product-select">
+                                <option value="">-- Chọn sản phẩm để thêm vào đơn --</option>
+                                <% if (locals.products && products.length > 0) { %>
+                                    <% products.forEach(product => { %>
+                                        <option value="<%= product._id %>"
+                                                data-name="<%= product.name %>"
+                                                data-price="<%= product.price %>"
+                                                data-size="<%= product.size[0] || 'N/A' %>">
+                                            <%= product.name %> (<%= new Intl.NumberFormat('vi-VN').format(product.price) %> VNĐ)
+                                        </option>
+                                    <% }) %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="col-sm-3 d-flex align-items-end">
+                            <button type="button" id="add-product-btn" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Thêm
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="mb-3">Sản phẩm trong đơn hàng</h6>
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th style="width: 120px;">Số lượng</th>
+                                <th>Giá</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="order-items-table">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card card-custom mb-4">
+    <div class="card-header bg-transparent">
+        <h5 class="card-title mb-0">3. Thông tin Khách hàng & Vận chuyển</h5>
+        </div>
+        <div class="card-body">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Tên (First Name) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="firstName" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Họ (Last Name) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="lastName" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" name="email" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                    <input type="tel" class="form-control" name="phoneNumber" required>
+                </div>
+            </div>
+            <hr>
+
+            <div class="mb-3">
+                <label class="form-label">Địa chỉ (Số nhà, Tên đường) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="streetAddress" placeholder="123 Main Street" required>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Thành phố <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="city" placeholder="Ho Chi Minh City" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Quốc gia <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="country" value="Vietnam" required>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-custom sticky-top" style="top: 90px;">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">4. Cài đặt đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái đơn hàng</label>
+                        <select class="form-select" name="status">
+                            <option value="pending" selected>Chờ xử lý (pending)</option>
+                            <option value="confirmed">Đã xác nhận (confirmed)</option>
+                            <option value="shipped">Đang giao (shipped)</option>
+                            <option value="delivered">Đã giao (delivered)</option>
+                            <option value="cancelled">Đã hủy (cancelled)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phương thức thanh toán</label>
+                        <select class="form-select" name="paymentMethod">
+                            <option value="cod" selected>COD (Thanh toán khi nhận hàng)</option>
+                            <option value="bank_transfer">Chuyển khoản ngân hàng</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="isPayment" id="isPayment">
+                        <label class="form-check-label" for="isPayment">
+                            Đánh dấu là "Đã thanh toán"
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú của Admin</label>
+                        <textarea class="form-control" name="note" rows="3" placeholder="Ghi chú nội bộ..."></textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-2"></i>
+                        Tạo đơn hàng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-product-btn');
+        const productSelect = document.getElementById('product-select');
+        const tableBody = document.getElementById('order-items-table');
+
+        // 1. Khi bấm nút "Thêm"
+        addBtn.addEventListener('click', function() {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            
+            // Bỏ qua nếu chọn "Chọn sản phẩm..."
+            if (!selectedOption.value) {
+                alert('Vui lòng chọn một sản phẩm.');
+                return;
+            }
+
+            const productId = selectedOption.value;
+            const productName = selectedOption.getAttribute('data-name');
+            const productPrice = selectedOption.getAttribute('data-price');
+            const productSize = selectedOption.getAttribute('data-size');
+
+            // Kiểm tra xem sản phẩm đã có trong bảng chưa
+            if (document.querySelector(`input[name="productIds[]"][value="${productId}"]`)) {
+                alert('Sản phẩm này đã có trong đơn hàng.');
+                return;
+            }
+            
+            // Tạo hàng mới cho bảng
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>
+                    ${productName}
+                    <input type="hidden" name="productIds[]" value="${productId}">
+                    <input type="hidden" name="productNames[]" value="${productName}">
+                    <input type="hidden" name="productPrices[]" value="${productPrice}">
+                    <input type="hidden" name="productSizes[]" value="${productSize}">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" name="quantities[]" value="1" min="1" required>
+                </td>
+                <td>
+                    ${new Intl.NumberFormat('vi-VN').format(productPrice)} VNĐ
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            // Thêm hàng mới vào bảng
+            tableBody.appendChild(newRow);
+        });
+
+        // 2. Xử lý nút Xóa (sử dụng event delegation)
+        tableBody.addEventListener('click', function(e) {
+            // Kiểm tra xem có phải bấm vào nút xóa không
+            if (e.target.closest('.remove-item-btn')) {
+                // Xóa hàng (tr) cha của nút đó
+                e.target.closest('tr').remove();
+            }
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Lấy các phần tử (elements)
+        const customerSelect = document.getElementById('customer-select');
+        
+        // Các input chúng ta cần điền
+        const firstNameInput = document.querySelector('input[name="firstName"]');
+        const lastNameInput = document.querySelector('input[name="lastName"]');
+        const emailInput = document.querySelector('input[name="email"]');
+        const phoneInput = document.querySelector('input[name="phoneNumber"]');
+        
+        // 2. Gắn sự kiện 'change' (khi admin chọn user)
+        customerSelect.addEventListener('change', function() {
+            // Lấy <option> đang được chọn
+            const selectedOption = this.options[this.selectedIndex];
+
+            if (!selectedOption.value) {
+                // Nếu admin chọn "-- Chọn --", thì xóa trắng các ô
+                firstNameInput.value = '';
+                lastNameInput.value = '';
+                emailInput.value = '';
+                phoneInput.value = '';
+                return;
+            }
+
+            // 3. Lấy dữ liệu từ data-attributes và điền vào form
+            firstNameInput.value = selectedOption.getAttribute('data-firstname');
+            lastNameInput.value = selectedOption.getAttribute('data-lastname');
+            emailInput.value = selectedOption.getAttribute('data-email');
+            phoneInput.value = selectedOption.getAttribute('data-phone');
+        });
+    });
+</script>

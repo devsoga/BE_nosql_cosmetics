@@ -10,14 +10,14 @@
         <p class="text-muted mb-0 mt-1">Quản lý thông tin khách hàng và tài khoản</p>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary">
+        <a href="/admin/users/export" class="btn btn-outline-secondary">
             <i class="fas fa-download me-1"></i>
             Xuất Excel
-        </button>
-        <button class="btn btn-primary">
+        </a>
+        <a href="/admin/users/add" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i>
             Thêm khách hàng
-        </button>
+        </a>
     </div>
 </div>
 
@@ -133,21 +133,45 @@
                                 </td>
                                 <td>
                                     <span class="text-muted">
-                                        <%= new Date(user.createdAt).toLocaleDateString('vi-VN') %>
-                                    </span>
+                                        <%= new Date(user.createAt || user.createdAt || Date.now()).toLocaleDateString('vi-VN') %>                                    </span>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <button class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" title="Chặn">
-                                            <i class="fas fa-ban"></i>
-                                        </button>
-                                    </div>
+                                    <a href="/admin/users/view/<%= user._id %>" class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    <a href="/admin/users/edit/<%= user._id %>" class="btn btn-sm btn-outline-secondary" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <% if (user.role !== 'admin') { %>
+                                        
+                                        <form action="/admin/users/delete/<%= user._id %>" method="POST" 
+                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa khách hàng này?');" 
+                                            style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+
+                                        <% if (user.status === 'blocked') { %>
+                                            <form action="/admin/users/status/<%= user._id %>" method="POST" style="display: inline;">
+                                                <input type="hidden" name="status" value="active">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Mở khóa">
+                                                    <i class="fas fa-unlock"></i>
+                                                </button>
+                                            </form>
+                                        <% } else { %>
+                                            <form action="/admin/users/status/<%= user._id %>" method="POST" style="display: inline;">
+                                                <input type="hidden" name="status" value="blocked">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Chặn">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            </form>
+                                        <% } %>
+
+                                    <% } %> </div>
                                 </td>
                             </tr>
                             <% }) %>

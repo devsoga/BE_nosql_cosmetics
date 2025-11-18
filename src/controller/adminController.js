@@ -6,80 +6,83 @@ import {commentService} from "../services/commentService.js";
 import fs from "fs";
 import path from "path";
 import ExcelJS from 'exceljs';
-// ... (các import khác)
+
 
 // Dashboard
+// 
+// Dashboard - Hiển thị thống kê
+// Dashboard - Hiển thị thống kê (Bản sửa lỗi đầy đủ)
 const dashboard = async (req, res, next) => {
   try {
-    // Get real data from MongoDB
+    // 1. Lấy dữ liệu thật
     const [products, users, orders] = await Promise.all([
       productService.getAllProducts(),
       userService.getAllUsers(),
       orderService.getAllOrders(),
     ]);
 
-    // Calculate real statistics
-    const totalRevenue =
-      orders?.reduce((sum, order) => sum + (order.total_price || 0), 0) || 0;
+    // Tổng doanh thu
+    // Chỉ cộng tiền những đơn ĐÃ GIAO THÀNH CÔNG
+  const totalRevenue = orders
+  .filter(order => order.status === 'delivered' || order.status === 'completed')
+  .reduce((sum, order) => sum + (order.totalPriceOrder || 0), 0);    
+    // Tổng khách hàng (Đếm tất cả user không phải là admin)
+    // Nếu user chưa có role, mặc định coi là khách hàng
+    const totalCustomers = users.filter(user => user.role !== 'admin').length;
 
-    // Get category distribution from real products
-    const categoryCount = {};
-    products?.forEach((product) => {
-      const category = product.category || "Other";
-      categoryCount[category] = (categoryCount[category] || 0) + 1;
-    });
-
-    const categoryChart = Object.entries(categoryCount).map(
-      ([category, count]) => ({
-        _id: category,
-        count,
-      })
-    );
-
-    // Get recent revenue by day (last 7 days)
+    // 3. Tính toán Biểu đồ Doanh thu (7 ngày qua) <-- PHẦN BỊ THIẾU TRƯỚC ĐÂY
     const revenueChart = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dayStart = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
+      
+      // Tạo mốc thời gian bắt đầu và kết thúc của ngày
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-      const dayOrders =
-        orders?.filter((order) => {
-          const orderDate = new Date(order.created_at);
+      // Lọc đơn hàng trong ngày đó
+      const dayOrders = orders.filter((order) => {
+          const orderDate = new Date(order.createAt || order.createdAt || Date.now());
           return orderDate >= dayStart && orderDate < dayEnd;
-        }) || [];
+      });
 
+      // Cộng tổng tiền các đơn trong ngày
       const dayRevenue = dayOrders.reduce(
-        (sum, order) => sum + (order.total_price || 0),
+        (sum, order) => sum + (order.totalPriceOrder || 0),
         0
       );
+      
       revenueChart.push({
         _id: dayStart.toISOString(),
         revenue: dayRevenue,
       });
     }
 
+    // 4. Tính toán Biểu đồ Danh mục (Category Chart)
+    const categoryCount = {};
+    products.forEach((product) => {
+      const category = product.category || "Chưa phân loại";
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+
+    const categoryChart = Object.entries(categoryCount).map(([category, count]) => ({
+      _id: category,
+      count,
+    }));
+
+    // 5. Đóng gói dữ liệu
     const stats = {
-      totalProducts: products?.length || 0,
-      totalUsers: users?.length || 0,
-      totalOrders: orders?.length || 0,
-      totalRevenue,
-      revenueChart,
-      categoryChart,
+      totalProducts: products.length,
+      totalUsers: totalCustomers, 
+      totalOrders: orders.length,
+      totalRevenue: totalRevenue,
+      revenueChart, // Dữ liệu cho biểu đồ đường
+      categoryChart, // Dữ liệu cho biểu đồ tròn
     };
 
-    // Get recent orders (last 5)
-    const recentOrders =
-      orders
-        ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        ?.slice(0, 5) || [];
-
-    const topProducts = products?.slice(0, 5) || [];
+    // Lấy 5 đơn hàng & sản phẩm mới nhất
+    const recentOrders = orders.slice(0, 5);
+    const topProducts = products.slice(0, 5);
 
     res.render("admin/dashboard", {
       title: "Dashboard",
@@ -388,15 +391,20 @@ const deleteMultipleProducts = async (req, res, next) => {
     res.redirect("/admin/products?error=" + error.message);
   }
 };
+// Dán 2 hàm này vào (thường là trước hàm 'orders')
 
-// Orders Management
-const orders = async (req, res, next) => {
+// 1. HÀM HIỂN THỊ FORM TẠO ĐƠN
+const addOrderForm = async (req, res, next) => {
   try {
-    const mockOrders = []; // Dữ liệu giả
-    res.render("admin/orders", {
-      title: "Quản lý đơn hàng",
+    // Để tạo đơn, chúng ta cần gửi danh sách khách hàng và sản phẩm
+    const allUsers = await userService.getAllUsers();
+    const allProducts = await productService.getAllProducts();
+
+    res.render("admin/order-add", {
+      title: "Tạo đơn hàng mới",
       currentPage: "orders",
-      orders: mockOrders,
+      users: allUsers,
+      products: allProducts,
       req,
     });
   } catch (error) {
@@ -404,16 +412,290 @@ const orders = async (req, res, next) => {
   }
 };
 
+// 2. HÀM XỬ LÝ VIỆC TẠO ĐƠN
+const createOrder = async (req, res, next) => {
+  try {
+    const formData = req.body;
+
+    // ---- XỬ LÝ DỮ LIỆU FORM (PHẦN PHỨC TẠP) ----
+    // 1. Lấy thông tin khách hàng
+    const user = await userService.getOneById(formData.userId);
+    if (!user) {
+      throw new Error("Không tìm thấy khách hàng.");
+    }
+
+    // 2. Xử lý danh sách sản phẩm
+    let listProduct = [];
+    let totalPriceOrder = 0;
+
+    // Đảm bảo productIds luôn là một mảng (nếu chỉ chọn 1 sp)
+    const productIds = Array.isArray(formData.productIds) ? formData.productIds : [formData.productIds];
+    const quantities = Array.isArray(formData.quantities) ? formData.quantities : [formData.quantities];
+
+    for (let i = 0; i < productIds.length; i++) {
+      const productId = productIds[i];
+      const quantity = parseInt(quantities[i], 10);
+
+      if (productId && quantity > 0) {
+        const product = await productService.getOneById(productId);
+        if (product) {
+          const itemTotalPrice = product.price * quantity;
+          listProduct.push({
+            productId: product._id.toString(),
+            name: product.name,
+            size: product.size[0] || 'N/A', // Lấy size đầu tiên làm mặc định
+            quantity: quantity,
+            price: product.price,
+            totalPrice: itemTotalPrice
+          });
+          totalPriceOrder += itemTotalPrice;
+        }
+      }
+    }
+
+    if (listProduct.length === 0) {
+      throw new Error("Vui lòng chọn ít nhất 1 sản phẩm.");
+    }
+
+    // 3. Tạo đối tượng đơn hàng hoàn chỉnh
+// 3. Tạo đối tượng đơn hàng hoàn chỉnh
+  const newOrderData = {
+    userId: user._id.toString(), // ID của user đã chọn
+    listProduct: listProduct,
+    totalPriceOrder: totalPriceOrder,
+
+    // === SỬA LỖI: Lấy thông tin từ FORM, không phải từ USER ===
+    firstName: formData.firstName.trim(), 
+    lastName: formData.lastName.trim(),
+    email: formData.email.trim(),
+    phoneNumber: formData.phoneNumber.trim(),
+
+    // Lấy thông tin vận chuyển từ form
+    streetAddress: formData.streetAddress.trim(),
+    city: formData.city.trim(),
+    country: formData.country.trim(),
+
+    // Các trường khác
+    paymentMethod: formData.paymentMethod,
+    status: formData.status,
+    isPayment: formData.isPayment === 'on',
+    note: formData.note || "",
+  };
+// ---- KẾT THÚC XỬ LÝ DỮ LIỆU ----
+    // ---- KẾT THÚC XỬ LÝ DỮ LIỆU ----
+
+    // 4. Gọi service mới để tạo đơn
+    await orderService.createAdminOrder(newOrderData);
+
+    res.redirect("/admin/orders?success=Tạo đơn hàng mới thành công");
+
+  } catch (error) {
+    console.error("Create Order Error:", error);
+    res.redirect(`/admin/orders/add?error=${error.message}`);
+  }
+};
+// Orders Management
+const orders = async (req, res, next) => {
+  try {
+    // 1. Lấy TẤT CẢ đơn hàng (đã có thông tin khách hàng)
+    let allOrders = await orderService.getAllOrders();
+
+    // 2. Lấy các tham số lọc từ URL (query params)
+    const search = req.query.search || '';
+    const status = req.query.status || '';
+    const date = req.query.date || '';
+
+    // 3. Lọc bằng JavaScript (giống như trang sản phẩm)
+
+    // Lọc theo Search (Mã đơn, Tên KH, Email)
+    // Lọc theo Search (Mã đơn, Tên KH, Email)
+    if (search) {
+      let searchLower = search.toLowerCase().trim();
+      
+      // Mẹo nhỏ: Nếu người dùng gõ dấu '#' (ví dụ: #654abc), ta xóa nó đi để tìm đúng ID trong DB
+      if (searchLower.startsWith('#')) {
+        searchLower = searchLower.substring(1);
+      }
+      
+      allOrders = allOrders.filter(order => {
+        // 1. Lấy thông tin khách hàng
+        const firstName = order.firstName || (order.customerDetails ? order.customerDetails.firstName : '') || '';
+        const lastName = order.lastName || (order.customerDetails ? order.customerDetails.lastName : '') || '';
+        const email = order.email || (order.customerDetails ? order.customerDetails.email : '') || '';
+        
+        // Ghép thành tên đầy đủ
+        const fullName = `${firstName} ${lastName}`.toLowerCase();
+        
+        // 2. Lấy Mã đơn hàng (Chuyển đổi an toàn sang chuỗi)
+        const orderId = String(order._id).toLowerCase();
+        
+        // 3. Kiểm tra xem từ khóa có nằm trong (ID) HOẶC (Tên) HOẶC (Email) không
+        return (
+          orderId.includes(searchLower) ||            // Tìm theo Mã đơn (kể cả tìm 1 phần mã)
+          fullName.includes(searchLower) ||           // Tìm theo Tên khách
+          email.toLowerCase().includes(searchLower)   // Tìm theo Email
+        );
+      });
+    }
+
+    // Lọc theo Trạng thái
+    if (status) {
+      allOrders = allOrders.filter(order => order.status === status);
+    }
+
+    // Lọc theo Ngày
+    if (date) {
+      // Chuyển đổi ngày lọc (ví dụ: "mm/dd/yyyy" hoặc "yyyy-mm-dd" sang object Date)
+      const filterDate = new Date(date);
+
+      allOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createAt);
+        // So sánh ngày, tháng, năm (bỏ qua giờ, phút, giây)
+        return orderDate.toDateString() === filterDate.toDateString();
+      });
+    }
+
+    // 4. Render ra view với dữ liệu đã lọc
+    res.render("admin/orders", {
+      title: "Quản lý đơn hàng",
+      currentPage: "orders",
+      orders: allOrders, // Truyền danh sách đơn hàng thật đã lọc
+      req, // Truyền req để giữ lại giá trị lọc trên thanh filter
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+// Dán hàm này vào sau hàm 'orders'
+const viewOrderDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params; // Lấy ID từ URL
+
+    // Gọi service để lấy chi tiết 1 đơn hàng
+    const order = await orderService.getAdminOrderById(id);
+
+    if (!order) {
+      // Nếu không tìm thấy đơn hàng, báo lỗi
+      return res.redirect("/admin/orders?error=Không tìm thấy đơn hàng");
+    }
+
+    // Render ra file view mới, và truyền data của đơn hàng vào
+    res.render("admin/order-details", {
+      title: "Chi tiết đơn hàng",
+      currentPage: "orders", // Vẫn giữ sidebar "Orders" sáng
+      order: order, // Dữ liệu đơn hàng
+      req,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+// Dán 2 hàm này vào sau hàm 'viewOrderDetails'
+
+// 1. HÀM HIỂN THỊ TRANG CHỈNH SỬA
+const editOrderForm = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Dùng lại hàm service để lấy chi tiết 1 đơn hàng
+    const order = await orderService.getAdminOrderById(id);
+
+    if (!order) {
+      return res.redirect("/admin/orders?error=Không tìm thấy đơn hàng");
+    }
+
+    // Render ra file view mới (chúng ta sẽ tạo ở bước 3)
+    res.render("admin/order-edit", {
+      title: "Cập nhật đơn hàng",
+      currentPage: "orders",
+      order: order,
+      req,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2. HÀM XỬ LÝ VIỆC CẬP NHẬT
+// THAY THẾ HÀM CŨ 'updateOrderStatus' BẰNG HÀM NÀY
+
+const updateOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Lấy tất cả dữ liệu từ form
+    const { status, streetAddress, city, country, isPayment } = req.body;
+
+    // 2. Tạo một đối tượng data sạch để cập nhật
+    // 2. Tạo một đối tượng data sạch để cập nhật
+const updateData = {
+  status: status,
+  streetAddress: (streetAddress || '').trim(),
+  city: (city || '').trim(),
+  country: (country || '').trim(),
+};
+
+    // 3. Gọi service TỔNG QUÁT mới
+    await orderService.updateOrderById(id, updateData);
+
+    // Chuyển hướng về trang danh sách với thông báo
+    res.redirect("/admin/orders?success=Cập nhật đơn hàng thành công");
+
+  } catch (error) {
+    console.error("Update Order Error:", error);
+    res.redirect(`/admin/orders/edit/${req.params.id}?error=${error.message}`);
+  }
+};
+// Users Management
 // Users Management
 const users = async (req, res, next) => {
   try {
-    const mockUsers = []; // Dữ liệu giả
+    // 1. Lấy toàn bộ danh sách users thật
+    let allUsers = await userService.getAllUsers();
+    
+    // 2. Xử lý tìm kiếm (nếu có)
+    const search = req.query.search || "";
+    
+    if (search) {
+      const searchLower = search.toLowerCase().trim();
+      
+      allUsers = allUsers.filter(user => {
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        const phone = (user.phoneNumber || '');
+
+        return (
+          fullName.includes(searchLower) || // Tìm theo tên
+          email.includes(searchLower) ||    // Tìm theo email
+          phone.includes(searchLower)       // Tìm theo SĐT
+        );
+      });
+    }
+
+    // 3. Render ra giao diện
     res.render("admin/users", {
       title: "Quản lý khách hàng",
       currentPage: "users",
-      users: mockUsers,
+      users: allUsers, // Truyền danh sách user thật
       req,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+// Hàm xử lý xóa đơn hàng
+const deleteOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Gọi service để xóa mềm
+    await orderService.deleteOrderById(id);
+
+    // Quay lại trang danh sách với thông báo
+    res.redirect("/admin/orders?success=Xóa đơn hàng thành công");
   } catch (error) {
     next(error);
   }
@@ -427,6 +709,29 @@ const reviews = async (req, res, next) => {
       title: "Quản lý đánh giá",
       currentPage: "reviews",
       reviews: mockReviews,
+      req,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// Hàm xem chi tiết khách hàng
+const viewUserDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Gọi service lấy data
+    const data = await userService.getUserDetails(id);
+    
+    if (!data) {
+      return res.redirect("/admin/users?error=Không tìm thấy khách hàng");
+    }
+
+    res.render("admin/user-details", {
+      title: "Chi tiết khách hàng",
+      currentPage: "users",
+      user: data.user,
+      orders: data.orders, // Truyền danh sách đơn hàng qua view
       req,
     });
   } catch (error) {
@@ -494,6 +799,254 @@ const exportProducts = async (req, res, next) => {
     next(error);
   }
 };
+// Dán hàm này vào chung với các hàm export khác
+const exportOrders = async (req, res, next) => {
+  try {
+    // 1. Lấy tất cả dữ liệu đơn hàng (đã có thông tin user)
+    const orders = await orderService.getAllOrders();
+
+    // 2. Tạo file Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Đơn hàng');
+
+    // 3. Định nghĩa các cột
+    worksheet.columns = [
+      { header: 'Mã đơn', key: '_id', width: 30 },
+      { header: 'Tên Khách hàng', key: 'customerName', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'SĐT', key: 'phoneNumber', width: 15 },
+      { header: 'Địa chỉ', key: 'address', width: 40 },
+      { header: 'Tổng tiền (VNĐ)', key: 'totalPriceOrder', width: 20, style: { numFmt: '#,##0' } },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+      { header: 'Thanh toán', key: 'isPaymentStatus', width: 15 },
+      { header: 'Ngày tạo', key: 'createAt', width: 20, style: { numFmt: 'dd/mm/yyyy' } }
+    ];
+
+    // 4. Thêm dữ liệu vào
+    orders.forEach(order => {
+      let customerName;
+      if (order.customerDetails) {
+        customerName = order.customerDetails.firstName + ' ' + order.customerDetails.lastName;
+      } else {
+        customerName = order.firstName + ' ' + order.lastName;
+      }
+
+      worksheet.addRow({
+        _id: order._id,
+        customerName: customerName,
+        email: order.email,
+        phoneNumber: order.phoneNumber,
+        address: `${order.streetAddress}, ${order.city}, ${order.country}`,
+        totalPriceOrder: order.totalPriceOrder,
+        status: order.status,
+        isPaymentStatus: order.isPayment ? 'Đã thanh toán' : 'Chưa thanh toán',
+        createAt: new Date(order.createAt)
+      });
+    });
+
+    // 5. Gửi file về trình duyệt
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="danh_sach_don_hang.xlsx"'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    next(error);
+  }
+};
+// 1. HIỂN THỊ FORM SỬA USER
+const editUserForm = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await userService.getOneById(id); // Dùng lại hàm có sẵn
+
+    if (!user) {
+      return res.redirect("/admin/users?error=Không tìm thấy khách hàng");
+    }
+
+    res.render("admin/user-edit", {
+      title: "Cập nhật khách hàng",
+      currentPage: "users",
+      user: user,
+      req,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2. XỬ LÝ CẬP NHẬT USER
+const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const formData = req.body;
+
+    // Chuẩn bị dữ liệu sạch
+    const updateData = {
+      firstName: (formData.firstName || '').trim(),
+      lastName: (formData.lastName || '').trim(),
+      phoneNumber: (formData.phoneNumber || '').trim(),
+      address: (formData.address || '').trim(),
+      role: formData.role,     // 'client' hoặc 'admin'
+      status: formData.status, // 'active', 'inactive', 'blocked'
+      verify: formData.verify === 'on' // Checkbox trả về 'on' hoặc undefined
+    };
+
+    await userService.updateUserById(id, updateData);
+
+    res.redirect("/admin/users?success=Cập nhật khách hàng thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+// 1. HIỂN THỊ FORM THÊM USER
+const addUserForm = (req, res) => {
+  res.render("admin/user-add", {
+    title: "Thêm khách hàng mới",
+    currentPage: "users",
+    req,
+  });
+};
+
+// 2. XỬ LÝ TẠO USER MỚI
+const createUser = async (req, res, next) => {
+  try {
+    const formData = req.body;
+
+    // Chuẩn bị dữ liệu user mới
+    const newUser = {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      password: formData.password, // Service sẽ lo việc mã hóa (hash)
+      phoneNumber: formData.phoneNumber.trim(),
+      address: formData.address.trim(),
+      role: formData.role || 'client',
+      status: formData.status || 'active',
+      verify: formData.verify === 'on' // Checkbox trả về 'on'
+    };
+
+    // Gọi service tạo user (hàm này đã có sẵn từ lúc làm chức năng đăng ký)
+    const createdUser = await userService.createNew(newUser);
+
+    if (!createdUser) {
+      // Nếu hàm trả về null nghĩa là email đã tồn tại
+      return res.render("admin/user-add", {
+        title: "Thêm khách hàng mới",
+        currentPage: "users",
+        error: "Email này đã tồn tại trong hệ thống!",
+        req,
+        oldData: formData // (Tùy chọn) Để giữ lại dữ liệu cũ
+      });
+    }
+
+    res.redirect("/admin/users?success=Thêm khách hàng thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+// XỬ LÝ XÓA KHÁCH HÀNG
+const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await userService.getOneById(id);
+    if (user && user.role === 'admin') {
+      return res.redirect("/admin/users?error=Không thể xóa tài khoản Admin!");
+    }
+
+    // Gọi service để xóa mềm
+    await userService.deleteUserById(id);
+
+    res.redirect("/admin/users?success=Xóa khách hàng thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+// HÀM CHUYÊN DỤNG: ĐỔI TRẠNG THÁI (CHẶN/MỞ KHÓA)
+const toggleUserStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // Lấy trạng thái mới từ nút bấm (blocked hoặc active)
+    const user = await userService.getOneById(id);
+    if (user && user.role === 'admin') {
+        return res.redirect("/admin/users?error=Không thể chặn tài khoản Admin!");
+    }
+    // Gọi service cập nhật (chỉ cập nhật đúng 1 trường status)
+    await userService.updateUserById(id, { status: status });
+
+    // Thông báo tùy theo hành động
+    const message = status === 'blocked' ? 'Đã chặn khách hàng thành công' : 'Đã mở khóa khách hàng';
+    res.redirect(`/admin/users?success=${message}`);
+  } catch (error) {
+    next(error);
+  }
+};
+// Hàm xuất Excel Khách hàng
+const exportUsers = async (req, res, next) => {
+  try {
+    // 1. Lấy toàn bộ danh sách users (đã có totalOrders)
+    const users = await userService.getAllUsers();
+
+    // 2. Tạo file Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Khách hàng');
+
+    // 3. Định nghĩa các cột
+    worksheet.columns = [
+      { header: 'ID', key: '_id', width: 30 },
+      { header: 'Họ và Tên', key: 'fullName', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Số điện thoại', key: 'phoneNumber', width: 20 },
+      { header: 'Vai trò', key: 'role', width: 15 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+      { header: 'Tổng đơn hàng', key: 'totalOrders', width: 15 },
+      { header: 'Ngày đăng ký', key: 'createdAt', width: 20, style: { numFmt: 'dd/mm/yyyy' } }
+    ];
+
+    // 4. Thêm dữ liệu vào
+    users.forEach(user => {
+      // Xử lý tên (tránh null)
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Khách hàng';
+
+      // Xử lý ngày (tránh lỗi Invalid Date)
+      const createdDate = user.createdAt || user.createAt || Date.now();
+
+      worksheet.addRow({
+        _id: user._id.toString(),
+        fullName: fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber || 'Chưa cập nhật',
+        role: user.role === 'admin' ? 'Admin' : 'Khách hàng',
+        status: user.status,
+        totalOrders: user.totalOrders || 0, // Số liệu này lấy từ hàm aggregate
+        createdAt: new Date(createdDate)
+      });
+    });
+
+    // 5. Gửi file về trình duyệt
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="danh_sach_khach_hang.xlsx"'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const adminController = {
   dashboard,
@@ -504,9 +1057,24 @@ export const adminController = {
   editProduct,
   deleteProduct,
   deleteMultipleProducts,
+  addOrderForm, 
+  createOrder,
   orders,
   users,
   reviews,
   analytics,
-  exportProducts // <-- THÊM HÀM MỚI VÀO ĐÂY
+  exportProducts,
+  viewOrderDetails,
+  editOrderForm, 
+  updateOrder,
+  exportOrders,
+  deleteOrder,
+  viewUserDetails,
+  updateUser,
+  editUserForm,
+  addUserForm,
+  createUser,
+  deleteUser,
+  toggleUserStatus,
+  exportUsers,
 };
