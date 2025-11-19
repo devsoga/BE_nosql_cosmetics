@@ -70,8 +70,7 @@ const getUserDetails = async (id) => {
     if (!user) return null;
 
     // 2. Lấy lịch sử đơn hàng của user đó
-    const orders = await orderModel.findByUserId(id);
-
+    const orders = await orderModel.findByEmail(user.email);
     // 3. Trả về cả hai
     return { user, orders };
   } catch (error) {

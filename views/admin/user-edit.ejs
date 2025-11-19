@@ -20,15 +20,9 @@
                     <h5 class="card-title mb-0">Thông tin cá nhân</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Họ (Last Name)</label>
-                            <input type="text" class="form-control" name="lastName" value="<%= user.lastName || '' %>">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tên (First Name)</label>
-                            <input type="text" class="form-control" name="firstName" value="<%= user.firstName || '' %>">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tên hiển thị (Username)</label>
+                        <input type="text" class="form-control" name="username" value="<%= user.username || '' %>" required>
                     </div>
 
                     <div class="mb-3">
@@ -56,13 +50,13 @@
                     <h5 class="card-title mb-0">Cài đặt tài khoản</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                   <!-- <div class="mb-3">
                         <label class="form-label fw-medium">Vai trò (Role)</label>
                         <select class="form-select" name="role">
                             <option value="client" <%= user.role === 'client' ? 'selected' : '' %>>Khách hàng (Client)</option>
                             <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Quản trị viên (Admin)</option>
                         </select>
-                    </div>
+                    </div> -->
 
                     <div class="mb-3">
                         <label class="form-label fw-medium">Trạng thái</label>

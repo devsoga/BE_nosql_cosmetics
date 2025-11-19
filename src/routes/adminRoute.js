@@ -49,6 +49,7 @@ router.get("/products/export", adminController.exportProducts); // <-- THÊM DÒ
 router.get("/products/add", adminController.addProductForm);
 
 
+
 // ... (các route khác)
 router.get("/products", adminController.products);
 router.get("/products/add", adminController.addProductForm);
@@ -91,6 +92,9 @@ router.get("/users/export", adminController.exportUsers);
 
 // Reviews Management
 router.get("/reviews", adminController.reviews);
+router.post("/reviews/delete/:id", adminController.deleteReview); // <-- THÊM DÒNG NÀY
+router.post("/reviews/approve/:id", adminController.approveReview);
+router.get("/reviews/view/:id", adminController.viewReviewDetails); // <-- THÊM DÒNG NÀY
 
 // Analytics
 router.get("/analytics", adminController.analytics);

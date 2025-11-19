@@ -20,14 +20,9 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Họ (Last Name) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="lastName" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tên (First Name) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="firstName" required>
-                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username (Tên đăng nhập)</label>
+                                <input type="text" class="form-control" name="username" value="<%= locals.user ? user.username : '' %>" required>                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -61,13 +56,13 @@
                     <h5 class="card-title mb-0">Cài đặt</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                    <!-- <div class="mb-3">
                         <label class="form-label fw-medium">Vai trò (Role)</label>
                         <select class="form-select" name="role">
                             <option value="client" selected>Khách hàng (Client)</option>
                             <option value="admin">Quản trị viên (Admin)</option>
                         </select>
-                    </div>
+                    </div> -->
 
                     <div class="mb-3">
                         <label class="form-label fw-medium">Trạng thái</label>

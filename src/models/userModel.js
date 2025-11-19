@@ -19,23 +19,23 @@ const USER_COLLECTION_NAME = "users";
 // });
 // validate 1 lan nua truoc khi dua data vao CSDL
 const USER_COLLECTION_SCHEMA = Joi.object({
+  // 1. Đăng nhập
   email: Joi.string().email().required().trim().strict(),
   password: Joi.string().min(6).required().trim().strict(),
-  username: Joi.string().trim().strict().allow(null, ""), 
   
-  // === CÁC TRƯỜNG MỚI ===
-  firstName: Joi.string().trim().default(""),
-  lastName: Joi.string().trim().default(""),
+  // 2. Tên hiển thị (Dùng username như bạn muốn)
+  username: Joi.string().required().trim().strict(), 
+
+  // 3. Vai trò (BẮT BUỘC PHẢI CÓ - Để bảo vệ hệ thống)
+  // Mặc định là 'client', bạn không cần gửi trường này từ form cũng được
+  role: Joi.string().valid('client', 'admin').default('client'),
+
+  // 4. Các thông tin phụ
   phoneNumber: Joi.string().trim().default(""),
   address: Joi.string().trim().default(""),
   avatar: Joi.string().trim().default(""),
-  role: Joi.string().valid('client', 'admin').default('client'),
-
-  // THÊM DÒNG NÀY VÀO:
   status: Joi.string().valid('active', 'inactive', 'blocked').default('active'),
-
   verify: Joi.boolean().default(false),
-  // ======================
 
   createAt: Joi.date().timestamp("javascript").default(() => Date.now()),
   _destroy: Joi.boolean().default(false),
@@ -119,35 +119,56 @@ const findByEmail = async (email) => {
 const getAllUsers = async () => {
   try {
     const result = await getDB()
-      .collection("users") 
+      .collection("users")
       .aggregate([
-        { $match: { _destroy: false } },
+        { $match: { 
+            _destroy: false,
+            role: { $ne: "admin" } // $ne nghĩa là "Not Equal" (Không bằng)
+          } },
 
-        // --- CODE CHUẨN: SO KHỚP OBJECT ID ---
-        // Vì cả 2 bên đều là ObjectId, ta so sánh trực tiếp
+        // --- CHIẾN THUẬT MỚI: KẾT NỐI BẰNG EMAIL ---
+        // (Cách này gom được cả đơn hàng cũ bị sai ID)
         {
           $lookup: {
             from: "orders",
-            localField: "_id",      // ID của user (ObjectId)
-            foreignField: "userId", // userId bên orders (ObjectId - như trong ảnh Compass)
+            localField: "email",       // Lấy Email của User
+            foreignField: "email",     // So khớp với Email trong đơn hàng
             as: "userOrders"
           }
         },
-        // -------------------------------------
+        // -------------------------------------------
 
+        // 2. Tính tổng số đơn hàng
+        // (Lọc thêm điều kiện: chỉ đếm đơn chưa bị xóa mềm)
         {
           $addFields: {
-            totalOrders: { $size: "$userOrders" }
+            // Lọc mảng userOrders để loại bỏ các đơn bị xóa (_destroy: true)
+            validOrders: {
+              $filter: {
+                input: "$userOrders",
+                as: "order",
+                cond: { $eq: ["$$order._destroy", false] }
+              }
+            }
+          }
+        },
+        
+        {
+          $addFields: {
+            totalOrders: { $size: "$validOrders" } // Đếm trên danh sách đã lọc
           }
         },
 
+        // 3. Dọn dẹp
         {
           $project: {
             userOrders: 0,
+            validOrders: 0,
             password: 0
           }
         },
         
+        // 4. Sắp xếp
         { $sort: { createdAt: -1 } }
       ])
       .toArray();

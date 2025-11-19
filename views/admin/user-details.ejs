@@ -17,9 +17,10 @@
             <div class="card-body text-center">
                 <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" 
                      style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem;">
-                    <%= (user.firstName || user.email || 'U').charAt(0).toUpperCase() %>
+                    <%= (user.name || user.username || user.email || 'U').charAt(0).toUpperCase() %>
                 </div>
-                <h5 class="mb-1"><%= user.firstName %> <%= user.lastName %></h5>
+                
+                <h5 class="mb-1"><%= user.name || user.username || 'Khách hàng' %></h5>
                 <p class="text-muted mb-3"><%= user.email %></p>
                 
                 <div class="d-flex justify-content-center gap-2">
@@ -34,6 +35,10 @@
                     <% } else { %>
                         <span class="badge bg-warning text-dark">Chưa xác thực</span>
                     <% } %>
+                    
+                    <% if (user.status === 'blocked') { %>
+                        <span class="badge bg-danger">Đang bị chặn</span>
+                    <% } %>
                 </div>
             </div>
             <div class="card-footer bg-white p-3">
@@ -43,7 +48,7 @@
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Ngày tham gia:</span>
-                    <span class="fw-medium"><%= new Date(user.createdAt).toLocaleDateString('vi-VN') %></span>
+                    <span class="fw-medium"><%= new Date(user.createAt || user.createdAt || Date.now()).toLocaleDateString('vi-VN') %></span>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span class="text-muted">Tổng đơn hàng:</span>
@@ -60,7 +65,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th>Mã đơn</th>
@@ -76,15 +81,23 @@
                                     <tr>
                                         <td>
                                             <a href="/admin/orders/view/<%= order._id %>" class="fw-medium text-decoration-none">
-                                                #<%= order._id.toString().slice(-6) %>
+                                                #<%= order._id.toString().slice(-6).toUpperCase() %>
                                             </a>
                                         </td>
-                                        <td><%= new Date(order.createAt).toLocaleDateString('vi-VN') %></td>
+                                        <td><%= new Date(order.createAt || order.createdAt).toLocaleDateString('vi-VN') %></td>
                                         <td class="text-success fw-bold">
-                                            <%= new Intl.NumberFormat('vi-VN').format(order.totalPriceOrder) %> VNĐ
+                                            <%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalPriceOrder) %>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary"><%= order.status %></span>
+                                            <% 
+                                            let badgeClass = 'bg-secondary';
+                                            if(order.status === 'pending') badgeClass = 'bg-warning text-dark';
+                                            else if(order.status === 'confirmed') badgeClass = 'bg-info';
+                                            else if(order.status === 'shipped') badgeClass = 'bg-primary';
+                                            else if(order.status === 'delivered') badgeClass = 'bg-success';
+                                            else if(order.status === 'cancelled') badgeClass = 'bg-danger';
+                                            %>
+                                            <span class="badge <%= badgeClass %>"><%= order.status %></span>
                                         </td>
                                         <td class="text-end">
                                             <a href="/admin/orders/view/<%= order._id %>" class="btn btn-sm btn-outline-primary">
@@ -95,8 +108,9 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        Khách hàng này chưa có đơn hàng nào.
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fas fa-shopping-bag fa-2x mb-3 opacity-50"></i>
+                                        <p>Khách hàng này chưa có đơn hàng nào.</p>
                                     </td>
                                 </tr>
                             <% } %>

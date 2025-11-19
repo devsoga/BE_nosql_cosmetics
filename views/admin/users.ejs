@@ -90,18 +90,18 @@
                                     <div class="d-flex align-items-center">
                                         <div class="avatar-circle me-3">
                                             <% if (user.avatar) { %>
-                                                <img src="<%= user.avatar %>" alt="<%= user.name %>"
+                                                <img src="<%= user.avatar %>" alt="<%= user.username %>"
                                                     class="rounded-circle" width="40" height="40">
-                                                <% } else { %>
-                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                                                        style="width: 40px; height: 40px;">
-                                                        <%= user.name?.charAt(0).toUpperCase() || 'U' %>
-                                                    </div>
-                                                    <% } %>
+                                            <% } else { %>
+                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                    style="width: 40px; height: 40px;">
+                                                    <%= (user.username || 'U').charAt(0).toUpperCase() %>
+                                                </div>
+                                            <% } %>
                                         </div>
                                         <div>
                                             <div class="fw-semibold">
-                                                <%= user.name || 'Khách hàng' %>
+                                                <%= user.username || 'Khách hàng' %>
                                             </div>
                                             <small class="text-muted">ID: <%= user._id.toString().slice(-8) %></small>
                                         </div>
@@ -114,7 +114,7 @@
                                 </td>
                                 <td>
                                     <span class="text-muted">
-                                        <%= user.phone || 'Chưa cập nhật' %>
+                                        <%= user.phoneNumber || 'Chưa cập nhật' %>
                                     </span>
                                 </td>
                                 <td>

@@ -6,6 +6,7 @@ import {commentService} from "../services/commentService.js";
 import fs from "fs";
 import path from "path";
 import ExcelJS from 'exceljs';
+import { reviewService } from "../services/reviewService.js";
 
 
 // Dashboard
@@ -413,87 +414,112 @@ const addOrderForm = async (req, res, next) => {
 };
 
 // 2. HÀM XỬ LÝ VIỆC TẠO ĐƠN
-const createOrder = async (req, res, next) => {
-  try {
-    const formData = req.body;
-
-    // ---- XỬ LÝ DỮ LIỆU FORM (PHẦN PHỨC TẠP) ----
-    // 1. Lấy thông tin khách hàng
-    const user = await userService.getOneById(formData.userId);
-    if (!user) {
-      throw new Error("Không tìm thấy khách hàng.");
-    }
-
-    // 2. Xử lý danh sách sản phẩm
-    let listProduct = [];
-    let totalPriceOrder = 0;
-
-    // Đảm bảo productIds luôn là một mảng (nếu chỉ chọn 1 sp)
-    const productIds = Array.isArray(formData.productIds) ? formData.productIds : [formData.productIds];
-    const quantities = Array.isArray(formData.quantities) ? formData.quantities : [formData.quantities];
-
-    for (let i = 0; i < productIds.length; i++) {
-      const productId = productIds[i];
-      const quantity = parseInt(quantities[i], 10);
-
-      if (productId && quantity > 0) {
-        const product = await productService.getOneById(productId);
-        if (product) {
-          const itemTotalPrice = product.price * quantity;
-          listProduct.push({
-            productId: product._id.toString(),
-            name: product.name,
-            size: product.size[0] || 'N/A', // Lấy size đầu tiên làm mặc định
-            quantity: quantity,
-            price: product.price,
-            totalPrice: itemTotalPrice
-          });
-          totalPriceOrder += itemTotalPrice;
+// 2. HÀM XỬ LÝ VIỆC TẠO ĐƠN (Đã sửa lỗi trim)
+    const createOrder = async (req, res, next) => {
+      try {
+        const formData = req.body;
+        
+        // 1. Lấy thông tin khách hàng (nếu có chọn)
+        let user = null;
+        if (formData.userId) {
+            user = await userService.getOneById(formData.userId);
         }
+
+        if (!user) {
+          throw new Error("Không tìm thấy thông tin khách hàng.");
+        }
+
+        // 2. Xử lý danh sách sản phẩm
+        let listProduct = [];
+        let totalPriceOrder = 0;
+
+        // Xử lý mảng an toàn (tránh lỗi nếu chỉ chọn 1 sản phẩm)
+        const productIds = [].concat(formData['productIds[]'] || formData.productIds || []);
+        const quantities = [].concat(formData['quantities[]'] || formData.quantities || []);
+        // Lưu ý: Tên field trong form ejs là productIds[] có thể trả về dạng khác tùy parser
+
+        // Nếu parser không bắt được mảng, thử cách thủ công
+        const pIds = formData.productIds ? (Array.isArray(formData.productIds) ? formData.productIds : [formData.productIds]) : [];
+        const pQtys = formData.quantities ? (Array.isArray(formData.quantities) ? formData.quantities : [formData.quantities]) : [];
+
+        for (let i = 0; i < pIds.length; i++) {
+          const productId = pIds[i];
+          const quantity = parseInt(pQtys[i] || 0, 10);
+          
+          if (productId && quantity > 0) {
+            const product = await productService.getOneById(productId);
+            if (product) {
+              const itemTotalPrice = product.price * quantity;
+              listProduct.push({
+                productId: product._id.toString(),
+                name: product.name,
+                size: product.size[0] || 'N/A',
+                quantity: quantity,
+                price: product.price,
+                totalPrice: itemTotalPrice
+              });
+              totalPriceOrder += itemTotalPrice;
+            }
+          }
+        }
+
+        if (listProduct.length === 0) {
+           // Nếu không có sản phẩm, thử bypass (hoặc throw error tùy bạn)
+           // throw new Error("Vui lòng chọn ít nhất 1 sản phẩm.");
+        }
+
+        // 3. Tạo đối tượng đơn hàng (SỬA LỖI TRIM Ở ĐÂY)
+        // Dùng (biến || '') trước khi .trim() để đảm bảo không bao giờ lỗi
+        const newOrderData = {
+          userId: user._id.toString(),
+          listProduct: listProduct,
+          totalPriceOrder: totalPriceOrder,
+          
+          // Lấy thông tin từ form, nếu không có thì lấy từ user, nếu không có nữa thì để rỗng
+          // Ưu tiên lấy từ Form nhập liệu (formData)
+          firstName: (formData.firstName || user.firstName || '').trim(), 
+          lastName: (formData.lastName || user.lastName || '').trim(),
+          
+          // Nếu bạn dùng trường 'name' gộp:
+          name: (formData.name || user.name || user.username || '').trim(),
+
+          email: (formData.email || user.email || '').trim(),
+          phoneNumber: (formData.phoneNumber || user.phoneNumber || '').trim(),
+          
+          // Thông tin vận chuyển
+          streetAddress: (formData.streetAddress || '').trim(),
+          city: (formData.city || '').trim(),
+          country: (formData.country || '').trim(),
+
+          // Các trường khác
+          paymentMethod: formData.paymentMethod || 'cod',
+          status: formData.status || 'pending',
+          isPayment: formData.isPayment === 'on',
+          note: (formData.note || '').trim(),
+        };
+
+        // 4. Gọi service
+        await orderService.createAdminOrder(newOrderData);
+
+        res.redirect("/admin/orders?success=Tạo đơn hàng mới thành công");
+
+      } catch (error) {
+        console.error("Create Order Error:", error);
+        // Quay lại trang add và báo lỗi
+        // (Lưu ý: cần truyền lại lists để không bị lỗi render)
+        const allUsers = await userService.getAllUsers();
+        const allProducts = await productService.getAllProducts();
+        
+        res.render("admin/order-add", {
+            title: "Tạo đơn hàng mới",
+            currentPage: "orders",
+            users: allUsers,
+            products: allProducts,
+            error: error.message,
+            req
+        });
       }
-    }
-
-    if (listProduct.length === 0) {
-      throw new Error("Vui lòng chọn ít nhất 1 sản phẩm.");
-    }
-
-    // 3. Tạo đối tượng đơn hàng hoàn chỉnh
-// 3. Tạo đối tượng đơn hàng hoàn chỉnh
-  const newOrderData = {
-    userId: user._id.toString(), // ID của user đã chọn
-    listProduct: listProduct,
-    totalPriceOrder: totalPriceOrder,
-
-    // === SỬA LỖI: Lấy thông tin từ FORM, không phải từ USER ===
-    firstName: formData.firstName.trim(), 
-    lastName: formData.lastName.trim(),
-    email: formData.email.trim(),
-    phoneNumber: formData.phoneNumber.trim(),
-
-    // Lấy thông tin vận chuyển từ form
-    streetAddress: formData.streetAddress.trim(),
-    city: formData.city.trim(),
-    country: formData.country.trim(),
-
-    // Các trường khác
-    paymentMethod: formData.paymentMethod,
-    status: formData.status,
-    isPayment: formData.isPayment === 'on',
-    note: formData.note || "",
-  };
-// ---- KẾT THÚC XỬ LÝ DỮ LIỆU ----
-    // ---- KẾT THÚC XỬ LÝ DỮ LIỆU ----
-
-    // 4. Gọi service mới để tạo đơn
-    await orderService.createAdminOrder(newOrderData);
-
-    res.redirect("/admin/orders?success=Tạo đơn hàng mới thành công");
-
-  } catch (error) {
-    console.error("Create Order Error:", error);
-    res.redirect(`/admin/orders/add?error=${error.message}`);
-  }
-};
+    };
 // Orders Management
 const orders = async (req, res, next) => {
   try {
@@ -702,15 +728,43 @@ const deleteOrder = async (req, res, next) => {
 };
 
 // Reviews Management
+// Reviews Management
 const reviews = async (req, res, next) => {
   try {
-    const mockReviews = []; // Dữ liệu giả
+    // 1. Lấy dữ liệu thật
+    let allReviews = await reviewService.getAllReviews();
+
+    // 2. Render ra view
     res.render("admin/reviews", {
       title: "Quản lý đánh giá",
       currentPage: "reviews",
-      reviews: mockReviews,
+      reviews: allReviews,
       req,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Hàm xóa review
+const deleteReview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await reviewService.deleteReviewById(id);
+    res.redirect("/admin/reviews?success=Xóa đánh giá thành công");
+  } catch (error) {
+    next(error);
+  }
+};
+// Xử lý duyệt đánh giá
+const approveReview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Gọi service để duyệt
+    await reviewService.approveReviewById(id);
+
+    res.redirect("/admin/reviews?success=Đã duyệt đánh giá thành công");
   } catch (error) {
     next(error);
   }
@@ -740,15 +794,112 @@ const viewUserDetails = async (req, res, next) => {
 };
 
 // Analytics
+// Analytics - Phân tích số liệu chi tiết
 const analytics = async (req, res, next) => {
   try {
-    const analyticsData = {}; // Dữ liệu giả
+    // 1. Lấy dữ liệu thô từ Database
+    const [orders, users, products] = await Promise.all([
+      orderService.getAllOrders(), // Lấy tất cả đơn hàng
+      userService.getAllUsers(),   // Lấy tất cả khách hàng
+      productService.getAllProducts() // Lấy tất cả sản phẩm
+    ]);
+
+    // --- A. TÍNH TOÁN CÁC THẺ SỐ LIỆU (CARDS) ---
+    
+    // 1. Tổng doanh thu (Chỉ tính đơn không bị hủy)
+    const totalRevenue = orders
+      .filter(o => o.status !== 'cancelled')
+      .reduce((sum, o) => sum + (o.totalPriceOrder || 0), 0);
+
+    // 2. Đơn hàng thành công (Đã giao hoặc Đã hoàn thành)
+    const successfulOrdersCount = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length;
+
+    // 3. Khách hàng mới (Đăng ký trong tháng này)
+    const currentMonth = new Date().getMonth();
+    const newCustomersCount = users.filter(u => {
+      const userDate = new Date(u.createdAt || u.createAt);
+      return userDate.getMonth() === currentMonth && u.role !== 'admin';
+    }).length;
+
+    // 4. Tỉ lệ chuyển đổi (Tạm tính: Số đơn hàng / Số khách hàng)
+    // (Thực tế cần Google Analytics, ở đây ta tính trung bình số đơn mỗi khách)
+    const totalCustomers = users.filter(u => u.role !== 'admin').length;
+    const conversionRate = totalCustomers > 0 ? (orders.length / totalCustomers).toFixed(1) : 0;
+
+
+    // --- B. TÍNH TOÁN BIỂU ĐỒ DOANH THU (7 NGÀY) ---
+    const revenueChartData = [];
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }); // VD: 19/11
+      days.push(dateStr);
+
+      // Tính tổng tiền của ngày đó
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const dayRevenue = orders
+        .filter(o => {
+          const oDate = new Date(o.createAt);
+          return oDate >= dayStart && oDate < dayEnd && o.status !== 'cancelled';
+        })
+        .reduce((sum, o) => sum + (o.totalPriceOrder || 0), 0);
+
+      revenueChartData.push(dayRevenue);
+    }
+
+
+    // --- C. TÍNH TOÁN TOP SẢN PHẨM BÁN CHẠY ---
+    // Tạo một map để đếm số lượng bán của từng sản phẩm
+    const productSales = {};
+    
+    orders.forEach(order => {
+      if (order.status !== 'cancelled') {
+        order.listProduct.forEach(item => {
+          if (!productSales[item.name]) {
+            productSales[item.name] = { 
+                name: item.name, 
+                qty: 0, 
+                total: 0,
+                price: item.price // Lưu giá để hiển thị
+            };
+          }
+          productSales[item.name].qty += item.quantity;
+          productSales[item.name].total += item.totalPrice;
+        });
+      }
+    });
+
+    // Chuyển object thành mảng và sắp xếp giảm dần theo số lượng bán
+    const topSellingProducts = Object.values(productSales)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5); // Lấy top 5
+
+
+    // --- D. GỬI DỮ LIỆU RA VIEW ---
+    const analyticsData = {
+      totalRevenue,
+      successfulOrdersCount,
+      newCustomersCount,
+      conversionRate,
+      
+      // Dữ liệu biểu đồ
+      chartLabels: days,
+      chartData: revenueChartData,
+      
+      // Dữ liệu bảng top
+      topProducts: topSellingProducts
+    };
+
     res.render("admin/analytics", {
       title: "Phân tích thống kê",
       currentPage: "analytics",
-      analytics: analyticsData,
+      data: analyticsData, // Truyền biến 'data'
       req,
     });
+
   } catch (error) {
     next(error);
   }
@@ -890,8 +1041,7 @@ const updateUser = async (req, res, next) => {
 
     // Chuẩn bị dữ liệu sạch
     const updateData = {
-      firstName: (formData.firstName || '').trim(),
-      lastName: (formData.lastName || '').trim(),
+      username: (formData.username || '').trim(),
       phoneNumber: (formData.phoneNumber || '').trim(),
       address: (formData.address || '').trim(),
       role: formData.role,     // 'client' hoặc 'admin'
@@ -922,13 +1072,12 @@ const createUser = async (req, res, next) => {
 
     // Chuẩn bị dữ liệu user mới
     const newUser = {
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
+      username: formData.username.trim(),
       email: formData.email.trim(),
       password: formData.password, // Service sẽ lo việc mã hóa (hash)
       phoneNumber: formData.phoneNumber.trim(),
       address: formData.address.trim(),
-      role: formData.role || 'client',
+      role:'client',
       status: formData.status || 'active',
       verify: formData.verify === 'on' // Checkbox trả về 'on'
     };
@@ -1047,6 +1196,26 @@ const exportUsers = async (req, res, next) => {
     next(error);
   }
 };
+// Xem chi tiết đánh giá
+const viewReviewDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const review = await reviewService.getReviewById(id);
+
+    if (!review) {
+      return res.redirect("/admin/reviews?error=Không tìm thấy đánh giá");
+    }
+
+    res.render("admin/review-details", {
+      title: "Chi tiết đánh giá",
+      currentPage: "reviews",
+      review: review,
+      req,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const adminController = {
   dashboard,
@@ -1062,6 +1231,8 @@ export const adminController = {
   orders,
   users,
   reviews,
+  deleteReview,
+  approveReview,
   analytics,
   exportProducts,
   viewOrderDetails,
@@ -1077,4 +1248,5 @@ export const adminController = {
   deleteUser,
   toggleUserStatus,
   exportUsers,
+  viewReviewDetails,
 };
