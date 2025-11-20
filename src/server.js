@@ -1,3 +1,4 @@
+import 'dotenv/config'; // <--- THÊM DÒNG NÀY VÀO ĐẦU TIÊN
 import express from "express";
 import expressLayouts from "express-ejs-layouts";
 import {connectDB} from "./config/mongo.js";

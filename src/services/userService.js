@@ -1,5 +1,6 @@
 import {userModel} from "../models/userModel.js";
 import bcrypt from "bcryptjs";
+import { orderModel } from "../models/orderModel.js";
 
 const createNew = async (reqBody) => {
   try {
@@ -52,10 +53,54 @@ const getAllUsers = async () => {
     throw error;
   }
 };
+const getOneById = async (id) => {
+  try {
+    // Hàm này gọi thẳng xuống model
+    // (Model của bạn đã có hàm findOneById, vì hàm createNew đang dùng nó)
+    const user = await userModel.findOneById(id);
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+const getUserDetails = async (id) => {
+  try {
+    // 1. Lấy thông tin user
+    const user = await userModel.findOneById(id);
+    if (!user) return null;
+
+    // 2. Lấy lịch sử đơn hàng của user đó
+    const orders = await orderModel.findByEmail(user.email);
+    // 3. Trả về cả hai
+    return { user, orders };
+  } catch (error) {
+    throw error;
+  }
+};
+const updateUserById = async (id, data) => {
+  try {
+    const result = await userModel.updateUser(id, data);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+const deleteUserById = async (id) => {
+  try {
+    const result = await userModel.deleteUser(id);
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
 
 export const userService = {
   createNew,
   login,
   findByEmail,
   getAllUsers,
+  getOneById,
+  getUserDetails,
+  updateUserById,
+  deleteUserById,
 };

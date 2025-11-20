@@ -1,0 +1,111 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0">
+            <i class="fas fa-comment-alt me-2"></i>
+            Chi tiết đánh giá
+        </h2>
+    </div>
+    <a href="/admin/reviews" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Quay lại danh sách
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Nội dung đánh giá</h5>
+                
+                <% 
+                let badgeClass = 'bg-secondary';
+                let statusText = review.status;
+                if (review.status === 'approved') { badgeClass = 'bg-success'; statusText = 'Đã duyệt'; }
+                else if (review.status === 'pending') { badgeClass = 'bg-warning text-dark'; statusText = 'Chờ duyệt'; }
+                else if (review.status === 'rejected') { badgeClass = 'bg-danger'; statusText = 'Từ chối'; }
+                %>
+                <span class="badge <%= badgeClass %>"><%= statusText %></span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 text-warning fs-5">
+                    <% for(let i=1; i<=5; i++) { %>
+                        <i class="fas fa-star <%= i <= review.rating ? '' : 'text-muted opacity-25' %>"></i>
+                    <% } %>
+                    <span class="text-dark ms-2 fw-bold"><%= review.rating %>/5</span>
+                </div>
+
+                <div class="p-3 bg-light rounded border">
+                    <i class="fas fa-quote-left text-muted me-2"></i>
+                    <span class="fst-italic"><%= review.comment %></span>
+                </div>
+                
+                <p class="text-muted mt-3 small">
+                    Ngày đánh giá: <%= new Date(review.createdAt || review.createAt).toLocaleString('vi-VN') %>
+                </p>
+            </div>
+            
+            <div class="card-footer bg-white">
+                <div class="d-flex gap-2">
+                    <% if (review.status === 'pending') { %>
+                        <form action="/admin/reviews/approve/<%= review._id %>" method="POST">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Duyệt đánh giá
+                            </button>
+                        </form>
+                    <% } %>
+
+                    <form action="/admin/reviews/delete/<%= review._id %>" method="POST" 
+                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa đánh giá này?');">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Xóa đánh giá
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="card-title mb-0">Sản phẩm được đánh giá</h5>
+            </div>
+            <div class="card-body text-center">
+                <% if (review.productDetails) { %>
+                    <img src="<%= review.productDetails.images?.[0] || '/static/images/no-image.jpg' %>" 
+                         class="img-fluid rounded mb-3" style="max-height: 150px;">
+                    <h6 class="fw-bold"><%= review.productDetails.name %></h6>
+                    <p class="text-muted"><%= review.productDetails.category %></p>
+                    <a href="/admin/products?search=<%= review.productDetails.name %>" class="btn btn-sm btn-outline-primary">Xem sản phẩm</a>
+                <% } else { %>
+                    <p class="text-muted">Sản phẩm này đã bị xóa.</p>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="card card-custom">
+            <div class="card-header bg-transparent">
+                <h5 class="card-title mb-0">Người đánh giá</h5>
+            </div>
+            <div class="card-body">
+                <% if (review.userDetails) { %>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                             style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            <%= (review.userDetails.name || review.userDetails.email || 'U').charAt(0).toUpperCase() %>
+                        </div>
+                        <div>
+                            <h6 class="mb-0"><%= review.userDetails.name || review.userDetails.username %></h6>
+                            <small class="text-muted"><%= review.userDetails.email %></small>
+                        </div>
+                    </div>
+                    <a href="/admin/users/view/<%= review.userDetails._id %>" class="btn btn-sm btn-outline-info w-100">
+                        Xem hồ sơ khách hàng
+                    </a>
+                <% } else { %>
+                    <p class="text-muted">Tài khoản này đã bị xóa.</p>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>

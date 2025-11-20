@@ -1,0 +1,91 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 mb-0">
+            <i class="fas fa-file-invoice-dollar me-2"></i>
+            Chi tiết đơn hàng
+        </h2>
+        <small class="text-muted">Mã đơn: <%= order._id %></small>
+    </div>
+    <a href="/admin/orders" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Quay lại danh sách
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="card-title mb-0">Danh sách sản phẩm (<%= order.listProduct.length %>)</h5>
+            </div>
+            <div class="card-body">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Kích cỡ</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-end">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% order.listProduct.forEach(item => { %>
+                            <tr>
+                                <td><%= item.name %></td>
+                                <td><%= item.size %></td>
+                                <td class="text-center"><%= item.quantity %></td>
+                                <td class="text-end"><%= new Intl.NumberFormat('vi-VN').format(item.totalPrice) %> VNĐ</td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td colspan="3" class="text-end">Tổng cộng:</td>
+                            <td class="text-end fs-5 text-danger">
+                                <%= new Intl.NumberFormat('vi-VN').format(order.totalPriceOrder) %> VNĐ
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="card-title mb-0">Khách hàng</h5>
+            </div>
+            <div class="card-body">
+               <p class="mb-1"><strong>Tên:</strong> <%= order.firstName %> <%= order.lastName %></p>
+                <p class="mb-1"><strong>Email:</strong> <%= order.email %></p>
+                <p class="mb-1"><strong>Điện thoại:</strong> <%= order.phoneNumber %></p>
+                <hr>
+                <p class="mb-1"><strong>Địa chỉ giao hàng:</strong></p>
+                <p class="text-muted">
+                    <%= order.streetAddress %>, <%= order.city %>, <%= order.country %>
+                </p>
+            </div>
+        </div>
+
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-transparent">
+                <h5 class="card-title mb-0">Trạng thái</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    Trạng thái thanh toán:
+                    <% if (order.isPayment) { %>
+                        <span class="badge bg-success">Đã thanh toán</span>
+                    <% } else { %>
+                        <span class="badge bg-warning text-dark">Chưa thanh toán</span>
+                    <% } %>
+                </p>
+                <p class="mb-1">
+                    Trạng thái đơn hàng: <strong><%= order.status %></strong>
+                </p>
+                
+                </div>
+        </div>
+    </div>
+</div>

@@ -45,6 +45,13 @@ router.get("/dashboard", adminController.dashboard);
 
 // Products Management
 router.get("/products", adminController.products);
+router.get("/products/export", adminController.exportProducts); // <-- THÊM DÒNG NÀY
+router.get("/products/add", adminController.addProductForm);
+
+
+
+// ... (các route khác)
+router.get("/products", adminController.products);
 router.get("/products/add", adminController.addProductForm);
 router.post(
   "/products/add",
@@ -65,12 +72,29 @@ router.post(
 
 // Orders Management
 router.get("/orders", adminController.orders);
-
+router.get("/orders/view/:id", adminController.viewOrderDetails); // <-- THÊM DÒNG NÀY
+router.get("/orders/edit/:id", adminController.editOrderForm); // 1. Hiển thị form
+router.post("/orders/update/:id", adminController.updateOrder); // 2. Xử lý cập nhật
+router.get("/orders/add", adminController.addOrderForm); // 1. Hiển thị form
+router.post("/orders/add", adminController.createOrder); // 2. Xử lý tạo đơn
+router.get("/orders/export", adminController.exportOrders);
+router.post("/orders/delete/:id", adminController.deleteOrder); // <-- THÊM DÒNG NÀY
 // Users Management
 router.get("/users", adminController.users);
+router.get("/users/view/:id", adminController.viewUserDetails);
+router.get("/users/edit/:id", adminController.editUserForm);
+router.post("/users/update/:id", adminController.updateUser);
+router.get("/users/add", adminController.addUserForm); // 1. Hiển thị form thêm
+router.post("/users/add", adminController.createUser);
+router.post("/users/delete/:id", adminController.deleteUser);
+router.post("/users/status/:id", adminController.toggleUserStatus);
+router.get("/users/export", adminController.exportUsers); 
 
 // Reviews Management
 router.get("/reviews", adminController.reviews);
+router.post("/reviews/delete/:id", adminController.deleteReview); // <-- THÊM DÒNG NÀY
+router.post("/reviews/approve/:id", adminController.approveReview);
+router.get("/reviews/view/:id", adminController.viewReviewDetails); // <-- THÊM DÒNG NÀY
 
 // Analytics
 router.get("/analytics", adminController.analytics);
