@@ -23,6 +23,7 @@ const validValue = async (req, res, next) => {
     email: Joi.string().email().required().trim(),
     firstName: Joi.string().required().trim(),
     lastName: Joi.string().required().trim(),
+    name: Joi.string().required().min(3).max(50).trim().strict(),
     phoneNumber: Joi.string().required().trim(),
     paymentMethod: Joi.string().required().trim(),
     streetAddress: Joi.string().required().trim(),

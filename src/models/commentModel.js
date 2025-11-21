@@ -1,38 +1,40 @@
 import Joi from "joi";
-import {getDB} from "../config/mongo.js";
-import {ObjectId} from "mongodb";
-import {parseStringToObjectId} from "../utils/parseStringToObjectId.js";
-import {parseObjectIdToString} from "../utils/parseObjectIdToString.js";
-import {userModel} from "./userModel.js";
+import { getDB } from "../config/mongo.js";
+import { ObjectId } from "mongodb";
+// import { userModel } from "./userModel.js"; // Bỏ comment nếu cần dùng
 
-// regex validate object_id
-const OBJECT_ID_RULE = /^[0-9a-fA-F]{24}$/;
+// 1. SỬA TÊN COLLECTION CHO KHỚP
+const COMMENT_COLLECTION_NAME = "reviews"; 
+const ORDER_COLLECTION_NAME = "orders";
 
-const COMMENT_COLLECTION_NAME = "comments";
-
-// validate 1 lan nua truoc khi dua data vao CSDL
+// 2. SCHEMA
 const COMMENT_COLLECTION_SCHEMA = Joi.object({
-  userId: Joi.string().pattern(OBJECT_ID_RULE).required(),
-  productId: Joi.string().pattern(OBJECT_ID_RULE).required(),
-  comment: Joi.string().required().trim().strict(),
-  createAt: Joi.date()
-    .timestamp("javascript")
-    .default(() => Date.now()),
+  userId: Joi.string().required(),
+  productId: Joi.string().required(),
+  
+  rating: Joi.number().min(1).max(5).default(5),
+  comment: Joi.string().required(), 
+  createdAt: Joi.date().timestamp("javascript").default(() => Date.now()),
+  _destroy: Joi.boolean().default(false),
+  
+  // Fields phụ
+  name: Joi.string().optional().allow(""),
+  email: Joi.string().optional().allow(""),
+  avatar: Joi.string().optional().allow(""),
+  content: Joi.string().optional().allow("") 
 });
 
-// thuc thi ham validation
 const validateBeforeCreate = async (data) => {
   const validData = await COMMENT_COLLECTION_SCHEMA.validateAsync(data, {
     abortEarly: false,
+    stripUnknown: true 
   });
 
-  const userInfo = await userModel.findOneById(data.userId);
-
+  // Chuyển đổi ID sang ObjectId
   const dataReturn = {
     ...validData,
-    username: userInfo.username,
-    productId: parseStringToObjectId(data.productId),
-    userId: parseStringToObjectId(data.userId),
+    productId: new ObjectId(validData.productId),
+    userId: new ObjectId(validData.userId),
   };
 
   return dataReturn;
@@ -42,9 +44,7 @@ const findOneById = async (id) => {
   try {
     const result = await getDB()
       .collection(COMMENT_COLLECTION_NAME)
-      .findOne({
-        _id: new ObjectId(id),
-      });
+      .findOne({ _id: new ObjectId(id) });
     return result;
   } catch (error) {
     throw new Error(error);
@@ -55,54 +55,68 @@ const findAllCommentByProductId = async (productId) => {
   try {
     const result = await getDB()
       .collection(COMMENT_COLLECTION_NAME)
-      .find({productId: new ObjectId(productId)})
+      .find({ productId: new ObjectId(productId) })
+      .sort({ createdAt: -1 }) 
       .toArray();
-
     return result;
   } catch (error) {
     throw new Error(`Error fetching comments: ${error.message}`);
   }
 };
 
+// --- HÀM TẠO REVIEW (ĐÃ FIX LOGIC) ---
 const createNew = async (data) => {
   try {
-    // kiem tra co pass qua dc validation hay khong
+    // validData lúc này đã chứa ObjectId cho userId và productId
     const validData = await validateBeforeCreate(data);
-    // chuyen huong toi Database
 
-    const result = await getDB()
-      .collection(COMMENT_COLLECTION_NAME)
-      .insertOne(validData);
-    // tra data ve cho service
-    return {...result, success: true, message: "Create comment successfully!"};
+    // 1. CHECK MUA HÀNG
+    // Lưu ý: Trong bảng Orders, productId trong mảng listProduct thường là String.
+    // Nên ta phải dùng .toString() để so sánh.
+    const hasPurchased = await getDB().collection(ORDER_COLLECTION_NAME).findOne({
+      userId: validData.userId, // UserId trong order là ObjectId (theo orderModel cũ)
+      "listProduct.productId": validData.productId.toString(), // Convert về String để khớp DB Orders
+      status: "delivered", // Chỉ cho phép khi đã giao hàng
+      _destroy: false
+    });
+
+    if (!hasPurchased) {
+      throw new Error("Bạn phải mua và nhận hàng thành công mới được đánh giá!");
+    }
+
+    // 2. CHECK SPAM (Mỗi người 1 lần)
+    const existingReview = await getDB().collection(COMMENT_COLLECTION_NAME).findOne({
+      userId: validData.userId,
+      productId: validData.productId,
+      _destroy: false
+    });
+
+    if (existingReview) {
+      throw new Error("Bạn đã đánh giá sản phẩm này rồi!");
+    }
+
+    // 3. LƯU VÀO DB
+    // Lúc này dùng validData (đã là ObjectId) để lưu vào Reviews
+    const result = await getDB().collection(COMMENT_COLLECTION_NAME).insertOne(validData);
+    
+    return { ...result, success: true, message: "Create comment successfully!" };
   } catch (error) {
-    throw new Error(error);
+    // Ném lỗi message string để Controller bắt được
+    throw new Error(error.message);
   }
-};
-
-const isOwnComment = async (commentId, userId) => {
-  const result = await findOneById(commentId);
-  return userId === parseObjectIdToString(result.userId);
 };
 
 const deleteCommentById = async (commentId, userId) => {
   try {
-    const isOwn = await isOwnComment(commentId, userId);
-
-    if (!isOwn) {
-      return {success: false, message: "You don't have permission!"};
-    }
-
     const result = await getDB()
       .collection(COMMENT_COLLECTION_NAME)
-      .deleteOne({_id: new ObjectId(commentId)});
+      .deleteOne({ _id: new ObjectId(commentId) });
 
-    // Kiểm tra có xóa được không
     if (result.deletedCount === 0) {
       throw new Error("Comment not found or already deleted");
     }
 
-    return {success: true, message: "Comment deleted successfully!"};
+    return { success: true, message: "Comment deleted successfully!" };
   } catch (error) {
     throw new Error(error);
   }
